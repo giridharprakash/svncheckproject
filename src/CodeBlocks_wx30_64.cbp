@@ -151,7 +151,7 @@
 					<Add directory="sdk/scripting/lib" />
 				</Linker>
 				<ExtraCommands>
-					<Add before="build_tools/autorevision/autorevision30_64 +wx +int +t . include/autorevision.h" />
+					<Add before="build_tools/autorevision/autorevision30_64 +wx +int +t .. include/autorevision.h" />
 					<Add after="cmd /c if not exist devel30_64\share\CodeBlocks mkdir devel30_64\share\CodeBlocks" />
 					<Add after="zip -jq9 devel30_64\share\CodeBlocks\manager_resources.zip sdk\resources\*.xrc" />
 					<Add after='cmd /c &quot;cd sdk\resources &amp; zip -0 -q ..\..\devel30_64\share\CodeBlocks\manager_resources.zip images\*.png images\12x12\*.png images\16x16\*.png&quot;' />
@@ -950,9 +950,6 @@
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/macrosmanager.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/managedthread.h">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/manager.h">
@@ -2670,9 +2667,6 @@
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/macrosmanager.cpp">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="sdk/managedthread.cpp">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/manager.cpp">

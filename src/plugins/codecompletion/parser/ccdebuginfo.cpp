@@ -12,7 +12,6 @@
 #ifndef CB_PRECOMP
     #include <wx/object.h>
     #include <wx/string.h>
-    #include <wx/choicdlg.h> // wxGetSingleChoiceIndex
     #include <wx/file.h>
     #include <wx/filedlg.h>
     #include <wx/utils.h>    // wxWindowDisabler
@@ -363,7 +362,7 @@ CCDebugInfo::CCDebugInfo(wxWindow* parent, ParserBase* parser, Token* token) :
     StdDialogButtonSizer1 = new wxStdDialogButtonSizer();
     StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_CANCEL, _("Close")));
     StdDialogButtonSizer1->Realize();
-    BoxSizer1->Add(StdDialogButtonSizer1, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL, 5);
+    BoxSizer1->Add(StdDialogButtonSizer1, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxEXPAND, 5);
     SetSizer(BoxSizer1);
     BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
@@ -617,7 +616,8 @@ void CCDebugInfo::OnFindClick(cb_unused wxCommandEvent& event)
                 arr.Add(token->DisplayName());
                 intarr.Add(*it);
             }
-            int sel = wxGetSingleChoiceIndex(_("Please make a selection:"), _("Multiple matches"), arr, this);
+            int sel = cbGetSingleChoiceIndex(_("Please make a selection:"), _("Multiple matches"), arr, this,
+                                             wxSize(400, 400));
             if (sel == -1)
                 return;
 
@@ -705,8 +705,8 @@ void CCDebugInfo::OnSave(cb_unused wxCommandEvent& event)
     saveWhat.Add(_("Dump the list of include directories"));
     saveWhat.Add(_("Dump the token list of files"));
 
-    int sel = wxGetSingleChoiceIndex(_("What do you want to save?"),
-                                     _("CC Debug Info"), saveWhat, this);
+    int sel = cbGetSingleChoiceIndex(_("What do you want to save?"), _("CC Debug Info"),
+                                     saveWhat, this, wxSize(400, 400));
 
     switch (sel)
     {

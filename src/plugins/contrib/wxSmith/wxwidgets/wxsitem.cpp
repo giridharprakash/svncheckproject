@@ -935,7 +935,7 @@ void wxsItem::Codef(wxsCoderContext* Context,const wxChar* Fmt,wxString& Result,
                         case _T('t'):
                         {
                             wxChar* String = va_arg(ap,wxChar*);
-                            Result << wxsCodeMarks::WxString(Language, String ? String : _T(""), Translation);
+                            Result << wxsCodeMarks::WxString(Language,String?String:_T(""),Translation);
                             break;
                         }
 
@@ -1086,6 +1086,9 @@ bool wxsItem::OnMouseDClick(cb_unused wxWindow* Preview,cb_unused int PosX,int c
             case wxsEventDesc::EndOfList:
                 break;
 
+            case wxsEventDesc::Id:      // fall-through
+            case wxsEventDesc::IdRange: // fall-through
+            case wxsEventDesc::NoId:    // fall-through
             default:
                 // Found event, now let's try to add handler for it
                 return wxsEventsEditor::Get().GotoOrBuildEvent(this,i,wxsPGRID());

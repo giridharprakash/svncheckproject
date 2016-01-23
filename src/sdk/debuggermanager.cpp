@@ -472,29 +472,10 @@ uint64_t cbDebuggerStringToAddress(const wxString &address)
 {
     if (address.empty())
         return 0;
-#if defined(__WXMSW__)
-    // Workaround for the 'ToULongLong' bug in wxWidgets 2.8.12
-#if wxCHECK_VERSION(2, 8, 12)
-    return strtoull(address.mb_str(), nullptr, 16);
-#else
+    std::istringstream s(address.utf8_str().data());
     uint64_t result;
-    if (address.ToULongLong(&result, 16))
-        return result;
-    else
-        return 0;
-#endif // wxCHECK_VERSION
-#else
-    uint64_t result;
-    // different sizes of long/long long on 64bit/32bit need different conversions
-#ifdef __LP64__
-    if (address.ToULong(&result, 16))
-#else
-    if (address.ToULongLong(&result, 16))
-#endif // __LP64__
-        return result;
-    else
-        return 0;
-#endif
+    s >> std::hex >> result;
+    return (s.fail() ? 0 : result);
 }
 
 wxString cbDebuggerAddressToString(uint64_t address)
@@ -1177,9 +1158,8 @@ inline void RefreshBreakpoints(cb_unused const cbDebuggerPlugin* plugin)
     for (int ii = 0; ii < count; ++ii)
     {
         EditorBase *editor = editorManager->GetEditor(ii);
-        if (!editor->IsBuiltinEditor())
-            continue;
-        editor->RefreshBreakpointMarkers();
+        if (editor->IsBuiltinEditor())
+            static_cast<cbEditor*>(editor)->RefreshBreakpointMarkers();
     }
 }
 

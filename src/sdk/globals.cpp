@@ -10,6 +10,7 @@
 #include "sdk_precomp.h"
 
 #ifndef CB_PRECOMP
+    #include <wx/choicdlg.h>
     #include <wx/file.h>
     #include <wx/filename.h>
     #include <wx/filesys.h>
@@ -17,6 +18,7 @@
     #include <wx/imaglist.h>
     #include <wx/listctrl.h>
     #include <wx/menu.h>
+    #include <wx/textdlg.h>
 
     #include "wx/wxscintilla.h"
 
@@ -1336,6 +1338,47 @@ int cbMessageBox(const wxString& message, const wxString& caption, int style, wx
     // wxMessage*Dialog* returns any of wxID_OK, wxID_CANCEL, wxID_YES, wxID_NO
     return dlg.ShowModal();
 }
+
+DLLIMPORT int cbGetSingleChoiceIndex(const wxString& message, const wxString& caption,
+                                     const wxArrayString& choices, wxWindow *parent,
+                                     const wxSize &size, int initialSelection)
+{
+    if (!parent)
+        parent = Manager::Get()->GetAppWindow();
+
+    wxSingleChoiceDialog dialog(parent, message, caption, choices);
+    dialog.SetSelection(initialSelection);
+    dialog.SetSize(size);
+    PlaceWindow(&dialog);
+    return (dialog.ShowModal() == wxID_OK ? dialog.GetSelection() : -1);
+}
+
+#if wxCHECK_VERSION(3, 0, 0)
+const char* cbGetTextFromUserPromptStr = wxGetTextFromUserPromptStr;
+#else
+const wxChar* cbGetTextFromUserPromptStr = wxGetTextFromUserPromptStr;
+#endif // wxCHECK_VERSION
+
+wxString cbGetTextFromUser(const wxString& message, const wxString& caption, const wxString& defaultValue,
+                           wxWindow *parent, wxCoord x, wxCoord y, bool centre)
+{
+    if (!parent)
+        parent = Manager::Get()->GetAppWindow();
+
+    long style = wxTextEntryDialogStyle;
+    if (centre)
+        style |= wxCENTRE;
+    else
+        style &= ~wxCENTRE;
+
+    wxTextEntryDialog dialog(parent, message, caption, defaultValue, style, wxPoint(x, y));
+    PlaceWindow(&dialog);
+    wxString str;
+    if (dialog.ShowModal() == wxID_OK)
+        str = dialog.GetValue();
+    return str;
+}
+
 
 wxImageList* cbProjectTreeImages::MakeImageList()
 {

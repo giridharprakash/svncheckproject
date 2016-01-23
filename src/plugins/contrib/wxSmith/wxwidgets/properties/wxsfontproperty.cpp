@@ -101,6 +101,7 @@ wxFont wxsFontData::BuildFont()
     }
 
     return wxFont(
+        // TODO (mortenmacfly#1#): wxDEFAULT looks like a bug to me: wxDEFAULT is 70, Size should be e.g. 8..12
         HasSize ? Size : wxDEFAULT,
         HasFamily ? Family : wxFONTFAMILY_DEFAULT,
         HasStyle ? Style : wxFONTSTYLE_NORMAL,
@@ -182,7 +183,7 @@ wxString wxsFontData::BuildFontCode(const wxString& FontName,wxsCoderContext* Co
                 wxString EncodingVar = FontName + _T("Encoding");
                 Code << _T("wxFontEncoding ") << EncodingVar
                      << _T(" = wxFontMapper::Get()->CharsetToEncoding(")
-                     << wxsCodeMarks::WxString(wxsCPP,Encoding) << _T(",false);\n");
+                     << wxsCodeMarks::WxString(wxsCPP,Encoding,false) << _T(",false);\n");
                 Code << _T("if ( ") << EncodingVar << _T(" == wxFONTENCODING_SYSTEM ) ");
                 Code << EncodingVar << _T(" = wxFONTENCODING_DEFAULT;\n");
                 EncodingStr = EncodingVar;
@@ -276,6 +277,8 @@ wxString wxsFontData::BuildFontCode(const wxString& FontName,wxsCoderContext* Co
             return Code;
         }
 
+
+        case wxsUnknownLanguage: // fall-through
         default:
         {
             wxsCodeMarks::Unknown(_T("wxsFontData::BuildFontCode"),Context->m_Language);

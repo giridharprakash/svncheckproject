@@ -441,6 +441,10 @@ void ProjectManagerUI::FinishLoadingWorkspace(cbProject* activeProject, const wx
 
 void ProjectManagerUI::SwitchToProjectsPage()
 {
+    CodeBlocksDockEvent showEvent(cbEVT_SHOW_DOCK_WINDOW);
+    showEvent.pWindow = m_pNotebook;
+    Manager::Get()->ProcessEvent(showEvent);
+
     int page = m_pNotebook->GetPageIndex(m_pTree);
     if (page != wxNOT_FOUND)
         m_pNotebook->SetSelection(page);
@@ -1095,7 +1099,7 @@ void ProjectManagerUI::OnRenameWorkspace(cb_unused wxCommandEvent& event)
     cbWorkspace* wkspc = Manager::Get()->GetProjectManager()->GetWorkspace();
     if (wkspc)
     {
-        wxString text = wxGetTextFromUser(_("Please enter the new name for the workspace:"),
+        wxString text = cbGetTextFromUser(_("Please enter the new name for the workspace:"),
                                           _("Rename workspace"),
                                           wkspc->GetTitle());
         if (!text.IsEmpty())
@@ -2043,7 +2047,7 @@ void ProjectManagerUI::OnFindFile(cb_unused wxCommandEvent& event)
 
 void ProjectManagerUI::OnAddVirtualFolder(cb_unused wxCommandEvent& event)
 {
-    wxString fld = wxGetTextFromUser(_("Please enter the new virtual folder path:"), _("New virtual folder"));
+    wxString fld = cbGetTextFromUser(_("Please enter the new virtual folder path:"), _("New virtual folder"));
     if (fld.IsEmpty())
         return;
 
@@ -2361,7 +2365,7 @@ int ProjectManagerUI::AskForBuildTargetIndex(cbProject* project)
     int count = prj->GetBuildTargetsCount();
     for (int i = 0; i < count; ++i)
         array.Add(prj->GetBuildTarget(i)->GetTitle());
-    int target = wxGetSingleChoiceIndex(_("Select the target:"), _("Project targets"), array);
+    int target = cbGetSingleChoiceIndex(_("Select the target:"), _("Project targets"), array, m_pTree, wxSize(300, 400));
 
     return target;
 }

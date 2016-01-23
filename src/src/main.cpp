@@ -185,6 +185,7 @@ int idEditBookmarks               = XRCID("idEditBookmarks");
 int idEditBookmarksToggle         = XRCID("idEditBookmarksToggle");
 int idEditBookmarksPrevious       = XRCID("idEditBookmarksPrevious");
 int idEditBookmarksNext           = XRCID("idEditBookmarksNext");
+int idEditBookmarksClearAll       = XRCID("idEditBookmarksClearAll");
 int idEditFolding                 = XRCID("idEditFolding");
 int idEditFoldAll                 = XRCID("idEditFoldAll");
 int idEditUnfoldAll               = XRCID("idEditUnfoldAll");
@@ -352,6 +353,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_UPDATE_UI(idEditBookmarksToggle,       MainFrame::OnEditMenuUpdateUI)
     EVT_UPDATE_UI(idEditBookmarksNext,         MainFrame::OnEditMenuUpdateUI)
     EVT_UPDATE_UI(idEditBookmarksPrevious,     MainFrame::OnEditMenuUpdateUI)
+    EVT_UPDATE_UI(idEditBookmarksClearAll,     MainFrame::OnEditMenuUpdateUI)
     EVT_UPDATE_UI(idEditCommentSelected,       MainFrame::OnEditMenuUpdateUI)
     EVT_UPDATE_UI(idEditUncommentSelected,     MainFrame::OnEditMenuUpdateUI)
     EVT_UPDATE_UI(idEditToggleCommentSelected, MainFrame::OnEditMenuUpdateUI)
@@ -482,6 +484,7 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(idEditBookmarksToggle,       MainFrame::OnEditBookmarksToggle)
     EVT_MENU(idEditBookmarksNext,         MainFrame::OnEditBookmarksNext)
     EVT_MENU(idEditBookmarksPrevious,     MainFrame::OnEditBookmarksPrevious)
+    EVT_MENU(idEditBookmarksClearAll,     MainFrame::OnEditBookmarksClearAll)
     EVT_MENU(idEditCommentSelected,       MainFrame::OnEditCommentSelected)
     EVT_MENU(idEditUncommentSelected,     MainFrame::OnEditUncommentSelected)
     EVT_MENU(idEditToggleCommentSelected, MainFrame::OnEditToggleCommentSelected)
@@ -2804,22 +2807,29 @@ void MainFrame::OnEditGotoMatchingBrace(cb_unused wxCommandEvent& event)
 void MainFrame::OnEditBookmarksToggle(cb_unused wxCommandEvent& event)
 {
     EditorBase* ed = Manager::Get()->GetEditorManager()->GetActiveEditor();
-    if (ed)
-        ed->ToggleBookmark();
+    if (ed && ed->IsBuiltinEditor())
+        static_cast<cbEditor*>(ed)->ToggleBookmark();
 }
 
 void MainFrame::OnEditBookmarksNext(cb_unused wxCommandEvent& event)
 {
     EditorBase* ed = Manager::Get()->GetEditorManager()->GetActiveEditor();
-    if (ed)
-        ed->GotoNextBookmark();
+    if (ed && ed->IsBuiltinEditor())
+        static_cast<cbEditor*>(ed)->GotoNextBookmark();
 }
 
 void MainFrame::OnEditBookmarksPrevious(cb_unused wxCommandEvent& event)
 {
     EditorBase* ed = Manager::Get()->GetEditorManager()->GetActiveEditor();
-    if (ed)
-        ed->GotoPreviousBookmark();
+    if (ed && ed->IsBuiltinEditor())
+        static_cast<cbEditor*>(ed)->GotoPreviousBookmark();
+}
+
+void MainFrame::OnEditBookmarksClearAll(wxCommandEvent& event)
+{
+    EditorBase* ed = Manager::Get()->GetEditorManager()->GetActiveEditor();
+    if (ed && ed->IsBuiltinEditor())
+        static_cast<cbEditor*>(ed)->ClearAllBookmarks();
 }
 
 void MainFrame::OnEditUndo(cb_unused wxCommandEvent& event)
@@ -3773,7 +3783,7 @@ void MainFrame::OnViewLayoutSave(cb_unused wxCommandEvent& event)
     wxString def = m_LastLayoutName;
     if ( def.empty() )
         def = Manager::Get()->GetConfigManager(_T("app"))->Read(_T("/main_frame/layout/default"));
-    wxString name = wxGetTextFromUser(_("Enter the name for this perspective"), _("Save current perspective"), def);
+    wxString name = cbGetTextFromUser(_("Enter the name for this perspective"), _("Save current perspective"), def);
     if (!name.IsEmpty())
     {
         DoFixToolbarsLayout();
@@ -3927,7 +3937,7 @@ void MainFrame::OnSearchGotoLine(cb_unused wxCommandEvent& event)
     However, this is just a temporary hack, because the default dialog used isn't
     that suitable either.
     */
-    wxString strLine = wxGetTextFromUser( wxString::Format(_("Line (1 - %d): "), max),
+    wxString strLine = cbGetTextFromUser( wxString::Format(_("Line (1 - %d): "), max),
                                         _("Goto line"),
                                         _T( "" ),
                                         this );
