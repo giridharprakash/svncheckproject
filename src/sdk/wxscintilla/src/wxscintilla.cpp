@@ -517,6 +517,7 @@ void wxScintilla::SetAnchor(int posAnchor)
 
 // Retrieve the text of the line containing the caret.
 // Returns the index of the caret on the line.
+// Result is NUL-terminated.
 wxString wxScintilla::GetCurLine(int* linePos)
 {
     int len = LineLength(GetCurrentLine());
@@ -2001,18 +2002,6 @@ wxString wxScintilla::GetTargetText() const
     return sci2wx(buf);
 }
 
-// Make the target range start and end be the same as the selection range start and end.
-void wxScintilla::TargetFromSelection()
-{
-    SendMsg(SCI_TARGETFROMSELECTION, 0, 0);
-}
-
-// Sets the target to the whole document.
-void wxScintilla::TargetWholeDocument()
-{
-    SendMsg(SCI_TARGETWHOLEDOCUMENT, 0, 0);
-}
-
 // Replace the target text with the argument text.
 // Text is counted so it can contain NULs.
 // Returns the length of the replacement text.
@@ -2544,6 +2533,7 @@ int wxScintilla::GetMultiPaste() const
 }
 
 // Retrieve the value of a tag from a regular expression search.
+// Result is NUL-terminated.
 wxString wxScintilla::GetTag(int tagNumber) const
 {
     // determine the string length
@@ -2557,6 +2547,18 @@ wxString wxScintilla::GetTag(int tagNumber) const
     mbuf.UngetWriteBuf(len);
     mbuf.AppendByte(0);
     return sci2wx(buf);
+}
+
+// Make the target range start and end be the same as the selection range start and end.
+void wxScintilla::TargetFromSelection()
+{
+    SendMsg(SCI_TARGETFROMSELECTION, 0, 0);
+}
+
+// Sets the target to the whole document.
+void wxScintilla::TargetWholeDocument()
+{
+    SendMsg(SCI_TARGETWHOLEDOCUMENT, 0, 0);
 }
 
 /* C::B begin */
@@ -4511,6 +4513,7 @@ void wxScintilla::SetRepresentation(const wxString& encodedCharacter, const wxSt
 }
 
 // Set the way a character is drawn.
+// Result is NUL-terminated.
 /* C::B begin */
 wxString wxScintilla::GetRepresentation(const wxString& encodedCharacter) const
 /* C::B end */
@@ -4655,6 +4658,7 @@ void* wxScintilla::PrivateLexerCall(int operation, void* pointer)
 }
 
 // Retrieve a '\n' separated list of properties understood by the current lexer.
+// Result is NUL-terminated.
 wxString wxScintilla::PropertyNames() const
 {
     // determine the string length
@@ -4677,6 +4681,7 @@ int wxScintilla::PropertyType(const wxString& name)
 }
 
 // Describe a property.
+// Result is NUL-terminated.
 wxString wxScintilla::DescribeProperty(const wxString& name) const
 {
     // determine the string length
@@ -4693,6 +4698,7 @@ wxString wxScintilla::DescribeProperty(const wxString& name) const
 }
 
 // Retrieve a '\n' separated list of descriptions of the keyword sets understood by the current lexer.
+// Result is NUL-terminated.
 wxString wxScintilla::DescribeKeyWordSets() const
 {
     // determine the string length
@@ -4765,6 +4771,7 @@ int wxScintilla::DistanceToSecondaryStyles() const
 }
 
 // Get the set of base styles that can be extended with sub styles
+// Result is NUL-terminated.
 wxString wxScintilla::GetSubStyleBases() const
 {
     // determine the string length
@@ -5903,7 +5910,7 @@ wxScintillaEvent::wxScintillaEvent(const wxScintillaEvent& event):
 /*static*/ wxVersionInfo wxScintilla::GetLibraryVersionInfo()
 {
     /* C::B -> Don't forget to change version number here and in wxscintilla.h at the top */
-    return wxVersionInfo("Scintilla", 3, 62, 0, "Scintilla 3.62");
+    return wxVersionInfo("Scintilla", 3, 63, 0, "Scintilla 3.63");
 }
 #endif
 /* C::B end */
