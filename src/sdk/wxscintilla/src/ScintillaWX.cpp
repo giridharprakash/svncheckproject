@@ -628,7 +628,6 @@ void ScintillaWX::Paste() {
 /* C::B begin */
     wxString textString;
 
-    bool haveTextString = false;
     bool isRectangularClipboard = false;
 
     wxTheClipboard->UsePrimarySelection(false);
@@ -646,7 +645,6 @@ void ScintillaWX::Paste() {
             char* buffer = new char[len];
             memcpy (buffer, rectBuf+1, len);
             textString = sci2wx(buffer, len);
-            haveTextString = true;
             delete [] buffer;
         } else {
             bool gotData = wxTheClipboard->GetData(data);
@@ -654,7 +652,6 @@ void ScintillaWX::Paste() {
             if (gotData) {
                 textString = wxTextBuffer::Translate(data.GetText(),
                                                      wxConvertEOLMode(pdoc->eolMode));
-                haveTextString = true;
             }
         }
     }
