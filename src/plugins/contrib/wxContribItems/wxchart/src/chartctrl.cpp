@@ -524,6 +524,8 @@ void wxChartCtrl::LoadImageHandler(
         case wxCHART_BMP:
             // nothing todo
             break;
+        default:
+            break;
         }
     }
 }
@@ -846,7 +848,7 @@ void wxChartCtrl::OnScroll(
 {
     //    if (event.GetEventType() != wxEVT_SCROLLWIN_THUMBTRACK)
     {
-#if wxCHECK_VERSION(2, 9, 0)
+#if wxCHECK_VERSION(3, 0, 0)
         wxScrolledWindow::HandleOnScroll( event );
 #else
         wxScrolledWindow::OnScroll( event );

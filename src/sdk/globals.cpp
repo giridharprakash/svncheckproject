@@ -190,7 +190,7 @@ wxStringVec GetVectorFromString(const wxString& text, const wxString& separator,
 wxArrayString MakeUniqueArray(const wxArrayString& array, bool caseSens)
 {
     wxArrayString out;
-    for (unsigned int i = 0; i < array.GetCount(); ++i)
+    for (size_t i = 0; i < array.GetCount(); ++i)
     {
         if (caseSens)
         {
@@ -213,7 +213,7 @@ wxString MakeUniqueString(const wxString& text, const wxString& separator, bool 
 
 void AppendArray(const wxArrayString& from, wxArrayString& to)
 {
-    for (unsigned int i = 0; i < from.GetCount(); ++i)
+    for (size_t i = 0; i < from.GetCount(); ++i)
         to.Add(from[i]);
 }
 
@@ -1045,7 +1045,7 @@ void SetSettingsIconsStyle(wxListCtrl* lc, SettingsIconsStyle style)
     long flags = lc->GetWindowStyleFlag();
     switch (style)
     {
-#if wxCHECK_VERSION(2, 9, 0)
+#if wxCHECK_VERSION(3, 0, 0)
         case sisNoIcons: flags = (flags & ~wxLC_MASK_TYPE) | wxLC_LIST; break;
 #else
         case sisNoIcons: flags = (flags & ~wxLC_MASK_TYPE) | wxLC_SMALL_ICON; break;

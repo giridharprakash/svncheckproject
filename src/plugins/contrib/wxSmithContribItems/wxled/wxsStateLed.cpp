@@ -53,6 +53,7 @@ void wxsStateLed::OnBuildCreatingCode()
     switch ( GetLanguage())
     {
         case wxsCPP:
+        {
             AddHeader(_T("<wx/stateLed.h>"),GetInfo().ClassName);
             Codef(_T("%C(%W,%I,wxColour(wxT(\"%s\")),%P,%S);\n"), ss.wx_str());
 
@@ -67,13 +68,15 @@ void wxsStateLed::OnBuildCreatingCode()
             else
                 Codef(_T("%ASetState(%d);\n"), m_State);
             break;
+        }
 
+        case wxsUnknownLanguage: // fall-through
         default:
             wxsCodeMarks::Unknown(_T("wxsStateLed::OnBuildCreatingCode"),GetLanguage());
     }
 }
 
-wxObject* wxsStateLed::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsStateLed::OnBuildPreview(wxWindow* Parent,cb_unused long Flags)
 {
     wxStateLed *Led = new wxStateLed(Parent,GetId(),m_Disable.GetColour(),Pos(Parent),Size(Parent));
 
@@ -91,7 +94,7 @@ wxObject* wxsStateLed::OnBuildPreview(wxWindow* Parent,long Flags)
     return Led;
 }
 
-void wxsStateLed::OnEnumWidgetProperties(long Flags)
+void wxsStateLed::OnEnumWidgetProperties(cb_unused long Flags)
 {
 
     WXS_COLOUR(
@@ -111,7 +114,7 @@ void wxsStateLed::OnEnumWidgetProperties(long Flags)
  */
 void wxsStateLed::OnAddExtraProperties(wxsPropertyGridManager *Grid)
 {
-#if wxCHECK_VERSION(2, 9, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
+#if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
     Grid->SelectPage(0);
 #else
     Grid->SetTargetPage(0);
@@ -148,7 +151,7 @@ void wxsStateLed::InsertPropertyForState(wxsPropertyGridManager *Grid, int Posit
  */
 void wxsStateLed::OnExtraPropertyChanged(wxsPropertyGridManager *Grid, wxPGId id)
 {
-#if wxCHECK_VERSION(2, 9, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
+#if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
     Grid->SelectPage(0);
 #else
     Grid->SetTargetPage(0);
@@ -175,7 +178,7 @@ void wxsStateLed::OnExtraPropertyChanged(wxsPropertyGridManager *Grid, wxPGId id
         else if( NewValue < m_numberOfState){
             // We have to remove some entries
             for(int i = NewValue; i < m_numberOfState; i++){
-#if wxCHECK_VERSION(2, 9, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
+#if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
                 Grid->DeleteProperty(m_StateColor[i].id);
 #else
                 Grid->Delete(m_StateColor[i].id);
@@ -241,7 +244,7 @@ bool wxsStateLed::HandleChangeInState(wxsPropertyGridManager *Grid, wxPGId id, i
 
 	if(m_StateColor[Position].id == id){
 
-#if wxCHECK_VERSION(2,9,0)
+#if wxCHECK_VERSION(3, 0, 0)
         wxVariant var = Grid->GetPropertyValue(id);
         wxString sPropType = var.GetType();
 		if(sPropType.IsSameAs(wxT("wxColourPropertyValue"))){
