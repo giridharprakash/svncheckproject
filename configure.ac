@@ -31,6 +31,9 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_AWK
 
+m4_include([ax_cxx_compile_stdcxx.m4])
+AX_CXX_COMPILE_STDCXX(11, noext)
+
 CODEBLOCKS_CHECK_LINK_FLAG([-Wl,--no-undefined],[LDFLAGS="-Wl,--no-undefined $LDFLAGS"])
 
 CODEBLOCKS_CHECK_DEBUG
@@ -92,7 +95,7 @@ CODEBLOCKS_ENABLE_SETTINGS
 
 AM_OPTIONS_WXCONFIG
 AM_PATH_WXCONFIG(2.8.12, wxWin=1)
-        if test "$wxWin" != 1; then
+    if test "$wxWin" != 1; then
         AC_MSG_ERROR([
                 wxWidgets must be installed on your system.
 
