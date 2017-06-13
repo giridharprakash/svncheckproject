@@ -1,10 +1,10 @@
 SUBDIRS = resources
 
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
+			$(CB_SQUIRREL_CFLAGS) \
 			-I$(top_srcdir)/src/sdk/wxscintilla/include \
 			$(WXPROPGRID_INCLUDE) \
 			-I$(top_srcdir)/src/include \
-			-I$(top_srcdir)/src/include/scripting/include \
 			-I$(top_srcdir)/src/include/scripting/sqplus \
  			-I$(top_srcdir)/src/include/mozilla_chardet \
  			-I$(top_srcdir)/src/include/mozilla_chardet/mfbt \
@@ -18,7 +18,7 @@ GTK_NOTEBOOK_FLAGS = -DUSE_GTK_NOTEBOOK
 endif
 
 if CODEBLOCKS_LINUX
-AM_CPPFLAGS += -DENABLE_BINRELOC -DAPP_PREFIX="\"@prefix@\"" $(WX_GTK2_CFLAGS) $(GTK_NOTEBOOK_FLAGS)
+AM_CPPFLAGS += -DENABLE_BINRELOC -DAPP_PREFIX="\"@prefix@\"" $(WX_GTK_CFLAGS) $(GTK_NOTEBOOK_FLAGS)
 endif
 
 bin_PROGRAMS = codeblocks
@@ -30,11 +30,11 @@ install-exec-hook:
 	$(MACSETFILE) -a C $(DESTDIR)$(bindir)/codeblocks$(EXEEXT)
 
 # wxAUI uses GTK+ libraries on wxGTK
-# codeblocks_LDFLAGS = $(WX_GTK2_LIBS)
+# codeblocks_LDFLAGS = $(WX_GTK_LIBS)
 
 codeblocks_LDADD =  ../sdk/libcodeblocks.la \
 			$(WX_LIBS) \
-			$(WX_GTK2_LIBS)
+			$(WX_GTK_LIBS)
 
 codeblocks_SOURCES = app.cpp \
 			appglobals.cpp \
@@ -56,6 +56,7 @@ codeblocks_SOURCES = app.cpp \
 			environmentsettingsdlg.cpp \
 			examinememorydlg.cpp \
 			find_replace.cpp \
+			goto_file.cpp \
 			infopane.cpp \
 			main.cpp \
 			notebookstyles.cpp \
@@ -95,6 +96,7 @@ noinst_HEADERS = app.h \
 			environmentsettingsdlg.h \
 			examinememorydlg.h \
 			find_replace.h \
+			goto_file.h \
 			infopane.h \
 			main.h \
 			notebookstyles.h \

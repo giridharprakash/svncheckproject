@@ -3,6 +3,7 @@
 	<object class="wxScrollingDialog" name="dlgEnvironmentSettings">
 		<title>Environment settings</title>
 		<centered>1</centered>
+		<style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
 		<object class="wxBoxSizer">
 			<orient>wxVERTICAL</orient>
 			<object class="sizeritem">
@@ -177,7 +178,6 @@
 												<object class="sizeritem">
 													<object class="wxCheckBox" name="chkEditorLayout">
 														<label>Save/restore editor layout</label>
-														<checked>0</checked>
 													</object>
 													<flag>wxTOP|wxEXPAND</flag>
 													<border>4</border>
@@ -378,6 +378,13 @@
 									</object>
 									<flag>wxLEFT|wxALIGN_LEFT</flag>
 									<border>16</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxCheckBox" name="chkAutoFocusMessagesOnErr">
+										<label>Focus first error in the editor after build finishes</label>
+									</object>
+									<flag>wxTOP|wxLEFT|wxALIGN_LEFT</flag>
+									<border>4</border>
 								</object>
 								<object class="sizeritem">
 									<object class="wxCheckBox" name="chkSaveSelectionChangeInMP">
@@ -857,6 +864,7 @@
 				</object>
 				<flag>wxALL|wxEXPAND</flag>
 				<border>8</border>
+				<option>1</option>
 			</object>
 			<object class="sizeritem">
 				<object class="wxStaticLine" name="ID_STATICLINE2" />

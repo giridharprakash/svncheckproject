@@ -44,6 +44,7 @@
 			<Add option="-mthreads" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
+			<Add option="-std=gnu++11" />
 			<Add option="-Winvalid-pch" />
 			<Add option='[[if (GetCompilerFactory().GetCompilerVersionString(_T(&quot;gcc&quot;)) &gt;= _T(&quot;4.0.0&quot;)) print(_T(&quot;-Wno-attributes&quot;));]]' />
 			<Add option="-DHAVE_W32API_H" />
@@ -54,10 +55,10 @@
 			<Add option="-DWX_PRECOMP" />
 			<Add option="-DBUILDING_PLUGIN" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
 			<Add directory="$(#WX.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX.include)" />
 			<Add directory="../../../include" />
+			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxpropgrid/include" />
 			<Add directory="../../../sdk/wxscintilla/include" />
 			<Add directory="../../../include/scripting/include" />
@@ -86,7 +87,6 @@
 			<Add directory="$(#WX.lib)/gcc_dll$(WX_CFG)" />
 			<Add directory="$(#WX.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="../../../devel" />
-			<Add directory="../../../base/tinyxml" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="update.bat" />

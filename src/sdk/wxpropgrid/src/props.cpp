@@ -251,6 +251,7 @@ static wxULongLong_t wxStrtoullBase(const wxChar* nptr, wxChar** endptr, int bas
     return sum;
 }
 
+wxULongLong_t wxStrtoull(const wxChar* nptr, wxChar** endptr, int base);
 wxULongLong_t wxStrtoull(const wxChar* nptr, wxChar** endptr, int base)
 {
     wxChar sign;
@@ -265,6 +266,7 @@ wxULongLong_t wxStrtoull(const wxChar* nptr, wxChar** endptr, int base)
     return uval;
 }
 
+wxLongLong_t wxStrtoll(const wxChar* nptr, wxChar** endptr, int base);
 wxLongLong_t wxStrtoll(const wxChar* nptr, wxChar** endptr, int base)
 {
     wxChar sign;
@@ -1393,7 +1395,7 @@ wxEnumProperty::wxEnumProperty( const wxString& label, const wxString& name,
 {
     SetIndex(0);
 
-    if ( &labels && labels.size() )
+    if ( labels.size() )
     {
         m_choices.Set(labels, values);
 
@@ -1600,7 +1602,7 @@ wxFlagsProperty::wxFlagsProperty( const wxString& label, const wxString& name,
 {
     m_oldChoicesData = (wxPGChoicesData*) NULL;
 
-    if ( &labels && labels.size() )
+    if ( labels.size() )
     {
         m_choices.Set(labels,values);
 

@@ -418,18 +418,20 @@ public:
 // -----------------------------------------------------------------------
 // C::B patch: define DLLIMPORT to be used to define WXDLLIMPEXP_PG later.
 #if defined(__WXMSW__)
-    #ifndef DLLIMPORT
+    #ifndef DLLIMPORT_PG
         #if EXPORT_LIB
-            #define DLLIMPORT __declspec (dllexport)
+            #define DLLIMPORT_PG __declspec (dllexport)
         #else
-            #define DLLIMPORT __declspec (dllimport)
+            #define DLLIMPORT_PG __declspec (dllimport)
         #endif // EXPORT_LIB
-    #endif // DLLIMPORT
+    #endif // DLLIMPORT_PG
 #else
-    #define DLLIMPORT
+    #ifndef DLLIMPORT_PG
+        #define DLLIMPORT_PG __attribute__ ((visibility ("default")))
+    #endif // DLLIMPORT_PG
 #endif
 
-#define WXDLLIMPEXP_PG DLLIMPORT
+#define WXDLLIMPEXP_PG DLLIMPORT_PG
 // C::B patch: Add define of WXDLLIMPEXP_PG_FWD to reduce warnings
 #define WXDLLIMPEXP_PG_FWD
 
@@ -676,7 +678,8 @@ protected:
 #define wxPG_EMPTY_ARRAYSTRING  wxArrayString()
 
 #if !defined(SWIG)
-    #define wxPG_LABEL              (*((wxString*)NULL))  // Used to tell wxPGProperty to use label as name as well.
+    extern wxString WXDLLIMPEXP_PG wxString_wxPG_LABEL;
+    #define wxPG_LABEL              wxString_wxPG_LABEL
     #define wxPG_NULL_BITMAP        wxNullBitmap
     #define wxPG_COLOUR_BLACK       (*wxBLACK)
 #else
@@ -3806,10 +3809,7 @@ public:
     void Set( const wxArrayString& labels, const wxArrayInt& values = wxPG_EMPTY_ARRAYINT )
     {
         Free();
-        if ( &values )
-            Add(labels,values);
-        else
-            Add(labels);
+        Add(labels,values);
     }
 
     // Creates exclusive copy of current choices
@@ -7675,7 +7675,7 @@ public:
     void IncFrozen() { m_frozen++; }
     void DecFrozen() { m_frozen--; }
 
-    void OnComboItemPaint( wxPGCustomComboControl* pCb,int item,wxDC& dc,
+    void OnComboItemPaint( wxPGCustomComboControl* pCb,int item,wxDC* pDc,
                            wxRect& rect,int flags );
 
     // Used by simple check box for keyboard navigation

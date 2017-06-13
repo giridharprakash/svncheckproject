@@ -47,6 +47,7 @@ VirtualBuildTargetsDlg::VirtualBuildTargetsDlg(wxWindow* parent,wxWindowID /*id*
     Connect(XRCID("ID_BTN_REMOVE"),wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&VirtualBuildTargetsDlg::OnRemoveClick);
     Connect(XRCID("ID_LST_TARGETS"),wxEVT_COMMAND_CHECKLISTBOX_TOGGLED,(wxObjectEventFunction)&VirtualBuildTargetsDlg::OnTargetsToggled);
     //*)
+    XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
 
     // fill aliases
     wxArrayString virtuals = m_pProject->GetVirtualBuildTargets();
@@ -119,7 +120,7 @@ void VirtualBuildTargetsDlg::OnAddClick(cb_unused wxCommandEvent& event)
     if (targetName.IsEmpty())
         return;
 
-    if (lstAliases->FindString(targetName) != wxNOT_FOUND)
+    if (lstAliases->FindString(targetName, true) != wxNOT_FOUND)
     {
         cbMessageBox(_("A virtual build target with this name already exists in this project!"),
                         _("Error"),
@@ -151,7 +152,7 @@ void VirtualBuildTargetsDlg::OnEditClick(cb_unused wxCommandEvent& event)
     if (targetName.IsEmpty() || targetName == lstAliases->GetStringSelection())
         return;
 
-    if (lstAliases->FindString(targetName) != wxNOT_FOUND)
+    if (lstAliases->FindString(targetName, true) != wxNOT_FOUND)
     {
         cbMessageBox(_("A virtual build target with this name already exists in this project!"),
                         _("Error"),

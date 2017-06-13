@@ -250,7 +250,7 @@
 				</ExtraCommands>
 			</Target>
 			<Target title="AStyle">
-				<Option output="devel30/share/CodeBlocks/plugins/astyle" prefix_auto="1" extension_auto="1" />
+				<Option output="devel30/share/CodeBlocks/plugins/Astyle" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="devel30" />
 				<Option object_output=".objs30" />
 				<Option external_deps="devel30/libcodeblocks.a;" />
@@ -278,7 +278,7 @@
 				</Linker>
 				<ExtraCommands>
 					<Add after="cmd /c if not exist devel30\share\CodeBlocks mkdir devel30\share\CodeBlocks" />
-					<Add after="zip -jq9 devel30\share\CodeBlocks\astyle.zip plugins\astyle\resources\manifest.xml plugins\astyle\resources\*.xrc" />
+					<Add after="zip -jq9 devel30\share\CodeBlocks\Astyle.zip plugins\astyle\resources\manifest.xml plugins\astyle\resources\*.xrc" />
 					<Mode after="always" />
 				</ExtraCommands>
 			</Target>
@@ -741,7 +741,7 @@
 		<Unit filename="base/tinyxml/tinystr.cpp">
 			<Option target="tinyXML" />
 		</Unit>
-		<Unit filename="base/tinyxml/tinywxuni.cpp">
+		<Unit filename="sdk/tinywxuni.cpp">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="base/tinyxml/tinyxml.cpp">
@@ -930,7 +930,7 @@
 		<Unit filename="include/importers_globals.h">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="include/incrementalselectlistdlg.h">
+		<Unit filename="include/incremental_select_helper.h">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/infowindow.h">
@@ -1289,7 +1289,7 @@
 		<Unit filename="include/tinyxml/tinystr.h">
 			<Option target="tinyXML" />
 		</Unit>
-		<Unit filename="include/tinyxml/tinywxuni.h">
+		<Unit filename="include/tinywxuni.h">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/tinyxml/tinyxml.h">
@@ -1462,6 +1462,12 @@
 		<Unit filename="plugins/codecompletion/doxygen_parser.h">
 			<Option target="Code-completion" />
 		</Unit>
+		<Unit filename="plugins/codecompletion/gotofunctiondlg.cpp">
+			<Option target="Code-completion" />
+		</Unit>
+		<Unit filename="plugins/codecompletion/gotofunctiondlg.h">
+			<Option target="Code-completion" />
+		</Unit>
 		<Unit filename="plugins/codecompletion/insertclassmethoddlg.cpp">
 			<Option target="Code-completion" />
 		</Unit>
@@ -1583,6 +1589,9 @@
 			<Option target="Code-completion" />
 		</Unit>
 		<Unit filename="plugins/codecompletion/systemheadersthread.h">
+			<Option target="Code-completion" />
+		</Unit>
+		<Unit filename="plugins/codecompletion/wxsmith/goto_function.wxs">
 			<Option target="Code-completion" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/advancedcompileroptionsdlg.cpp">
@@ -2653,7 +2662,7 @@
 		<Unit filename="sdk/importers_globals.cpp">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="sdk/incrementalselectlistdlg.cpp">
+		<Unit filename="sdk/incremental_select_helper.cpp">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/infowindow.cpp">
@@ -2857,10 +2866,10 @@
 		<Unit filename="sdk/resources/generic_multiline_notes.xrc">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="sdk/resources/global_uservars.xrc">
+		<Unit filename="sdk/resources/get_global_uservar.xrc">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="sdk/resources/incremental_select_list.xrc">
+		<Unit filename="sdk/resources/global_uservars.xrc">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/resources/lexers/lexer_OgreCompositor.sample">
@@ -4006,6 +4015,12 @@
 		<Unit filename="src/find_replace.h">
 			<Option target="src" />
 		</Unit>
+		<Unit filename="src/goto_file.cpp">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/goto_file.h">
+			<Option target="src" />
+		</Unit>
 		<Unit filename="src/infopane.cpp">
 			<Option target="src" />
 		</Unit>
@@ -4186,6 +4201,42 @@
 		<Unit filename="tools/ConsoleRunner/main.cpp">
 			<Option target="ConsoleRunner" />
 		</Unit>
+		<Unit filename="wxsmith/BuildTargetPanel.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/CCDebugInfo.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/CompilerPanel.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/EmbeddedHtmlPanel.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/FilePathPanel.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/GenericSelectPath.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/GenericSingleChoiceList.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/InfoPanel.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/ProjectPathPanel.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/ScriptConsole.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/VirtualBuildTargetsDlg.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/databreakpointdlg.wxs">
+			<Option target="src" />
+		</Unit>
 		<Unit filename="wxsmith/debuggersettingscommonpanel.wxs">
 			<Option target="src" />
 		</Unit>
@@ -4195,10 +4246,14 @@
 		<Unit filename="wxsmith/debuggersettingspanel.wxs">
 			<Option target="src" />
 		</Unit>
+		<Unit filename="wxsmith/goto_file.wxs">
+			<Option target="src" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />
 			<wxsmith version="1">
+				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
 				<resources>
 					<wxScrollingDialog wxs="wxsmith/VirtualBuildTargetsDlg.wxs" src="src/virtualbuildtargetsdlg.cpp" hdr="src/virtualbuildtargetsdlg.h" xrc="src/resources/virtualbuildtargetsdlg.xrc" fwddecl="0" i18n="1" name="VirtualBuildTargetsDlg" language="CPP" />
 					<wxScrollingDialog wxs="wxsmith/databreakpointdlg.wxs" src="plugins/debuggergdb/databreakpointdlg.cpp" hdr="plugins/debuggergdb/databreakpointdlg.h" fwddecl="0" i18n="1" name="DataBreakpointDlg" language="CPP" />
@@ -4215,6 +4270,8 @@
 					<wxScrollingDialog wxs="wxsmith/debuggersettingsdlg.wxs" src="src/debuggersettingsdlg.cpp" hdr="src/debuggersettingsdlg.h" fwddecl="0" i18n="1" name="DebuggerSettingsDlg" language="CPP" />
 					<wxPanel wxs="wxsmith/debuggersettingspanel.wxs" src="src/debuggersettingspanel.cpp" hdr="src/debuggersettingspanel.h" fwddecl="0" i18n="1" name="DebuggerSettingsPanel" language="CPP" />
 					<wxPanel wxs="wxsmith/debuggersettingscommonpanel.wxs" src="src/debuggersettingscommonpanel.cpp" hdr="src/debuggersettingscommonpanel.h" fwddecl="0" i18n="1" name="DebuggerSettingsCommonPanel" language="CPP" />
+					<wxDialog wxs="wxsmith/goto_file.wxs" src="src/goto_file.cpp" hdr="src/goto_file.h" fwddecl="1" i18n="1" name="GotoFile" language="CPP" />
+					<wxDialog wxs="plugins/codecompletion/wxsmith/goto_function.wxs" src="plugins/codecompletion/gotofunctiondlg.cpp" hdr="plugins/codecompletion/gotofunctiondlg.h" fwddecl="1" i18n="1" name="GotoFunctionDlg" language="CPP" />
 				</resources>
 			</wxsmith>
 			<debugger />

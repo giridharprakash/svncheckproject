@@ -10,14 +10,15 @@ AM_CPPFLAGS = $(WX_CXXFLAGS) \
 		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/base \
 		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/glue
 
-
 pluginlibdir = $(pkglibdir)/plugins
 
 pluginlib_LTLIBRARIES = libprojectsimporter.la
 
-libprojectsimporter_la_LDFLAGS = -module -version-info 0:1:0 -shared -no-undefined -avoid-version
+libprojectsimporter_la_LDFLAGS = @MODULE_SHARED_LDFLAGS@ -version-info 0:1:0 -no-undefined -avoid-version
 
-libprojectsimporter_la_LIBADD = ../../sdk/libcodeblocks.la $(WX_LIBS)
+libprojectsimporter_la_LIBADD = ../../sdk/libcodeblocks.la \
+				$(WX_LIBS) \
+				$(CB_TINYXML_LIBS)
 
 libprojectsimporter_la_SOURCES = projectsimporter.cpp \
 				devcpploader.cpp \

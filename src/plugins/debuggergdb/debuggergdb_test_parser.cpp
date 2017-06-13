@@ -415,7 +415,6 @@ TEST(RepeatingChars13)
                 *w);
 }
 
-
 TEST(StringWide)
 {
     cb::shared_ptr<GDBWatch> w(new GDBWatch(wxT("s")));
@@ -428,6 +427,22 @@ TEST(StringWideChar)
     cb::shared_ptr<GDBWatch> w(new GDBWatch(wxT("s")));
     CHECK(ParseGDBWatchValue(w, wxT("{m_impl = L's', m_test = {a = 5}")));
     CHECK_EQUAL(wxT("s= {m_impl=L's',m_test= {a=5}}"), *w);
+}
+
+TEST(ShortenedString)
+{
+    cb::shared_ptr<GDBWatch> w(new GDBWatch(wxT("s")));
+    CHECK(ParseGDBWatchValue(w, wxT("{m_impl = L\"Created:  \"...}")));
+    CHECK_EQUAL(1, w->GetChildCount());
+    CHECK_EQUAL(wxT("s= {m_impl=L\"Created:  \"...}"), *w);
+}
+
+TEST(ShortenedStringRepeatedChars)
+{
+    cb::shared_ptr<GDBWatch> w(new GDBWatch(wxT("s")));
+    CHECK(ParseGDBWatchValue(w, wxT("{m_impl = L\"/\", '*' <repeats 63 times>, \"Created: \"...}")));
+    CHECK_EQUAL(1, w->GetChildCount());
+    CHECK_EQUAL(wxT("s= {m_impl=L\"/\", '*' <repeats 63 times>, \"Created: \"...}"), *w);
 }
 
 TEST(ChangeType0)
@@ -556,7 +571,7 @@ TEST(PythonSTLVectorEmptyInStruct2)
 TEST(PythonSTLVectorEmptyInStruct2_count)
 {
     cb::shared_ptr<GDBWatch> w(new GDBWatch(wxT("s")));
-    ParseGDBWatchValue(w, wxT("{vec1 = empty, vector, vec2 = empty, vector}"));
+    CHECK(ParseGDBWatchValue(w, wxT("{vec1 = empty, vector, vec2 = empty, vector}")));
     CHECK_EQUAL(2, w->GetChildCount());
 }
 
@@ -572,15 +587,16 @@ TEST(PythonSTLVectorEmptyInStruct3)
 TEST(PythonSTLVectorEmptyInStruct3_count)
 {
     cb::shared_ptr<GDBWatch> w(new GDBWatch(wxT("s")));
-    ParseGDBWatchValue(w, wxT("{vec1 = vector size 0, capacity 0, vec2 = vector size 0, capacity 1,")
-                          wxT("vec3 = vector size 0, capacity 2}"));
+    CHECK(ParseGDBWatchValue(w, wxT("{vec1 = vector size 0, capacity 0, vec2 = vector size 0, capacity 1,")
+                          wxT("vec3 = vector size 0, capacity 2}")));
     CHECK_EQUAL(3, w->GetChildCount());
 }
 
 TEST(Python3dVectorInfiniteLoop)
 {
     cb::shared_ptr<GDBWatch> w(new GDBWatch(wxT("s")));
-    ParseGDBWatchValue(w, wxT("{ double = -3.18, vector = (x=5.7, y=2.9, z=-8.4) = {x = 5.7, y = 2.9, z = -8.4}}"));
+    CHECK(ParseGDBWatchValue(w, wxT("{ double = -3.18, vector = (x=5.7, y=2.9, z=-8.4) = ")
+                                wxT("{x = 5.7, y = 2.9, z = -8.4}}")));
     CHECK_EQUAL(2, w->GetChildCount());
     CHECK_EQUAL(wxT("s= {double=-3.18,vector=(x=5.7, y=2.9, z=-8.4) {x=5.7,y=2.9,z=-8.4}}"), *w);
 }

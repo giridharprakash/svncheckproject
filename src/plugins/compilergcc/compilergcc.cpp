@@ -34,6 +34,7 @@
 #include <configmanager.h>
 #include <compilercommandgenerator.h>
 #include <debuggermanager.h>
+#include <incremental_select_helper.h>
 #include <logmanager.h>
 #include <macrosmanager.h>
 #include <projectmanager.h>
@@ -193,7 +194,14 @@ int idMenuCompileAndRun                            = XRCID("idCompilerMenuCompil
 int idMenuRun                                      = XRCID("idCompilerMenuRun");
 int idMenuKillProcess                              = XRCID("idCompilerMenuKillProcess");
 int idMenuSelectTarget                             = XRCID("idCompilerMenuSelectTarget");
-int idMenuSelectTargetOther[MAX_TARGETS]; // initialized in ctor
+
+// Limit the number of menu items to try to make them all visible on the screen.
+// Scrolling menus is not the best user experience.
+const int maxTargetInMenus = 40;
+int idMenuSelectTargetOther[maxTargetInMenus]; // initialized in ctor
+int idMenuSelectTargetDialog                       = wxNewId();
+int idMenuSelectTargetHasMore                      = wxNewId();
+
 int idMenuNextError                                = XRCID("idCompilerMenuNextError");
 int idMenuPreviousError                            = XRCID("idCompilerMenuPreviousError");
 int idMenuClearErrors                              = XRCID("idCompilerMenuClearErrors");
@@ -276,6 +284,7 @@ BEGIN_EVENT_TABLE(CompilerGCC, cbCompilerPlugin)
     EVT_TEXT_URL(idBuildLog,                        CompilerGCC::TextURL)
 
     EVT_CHOICE(idToolTarget,                        CompilerGCC::OnSelectTarget)
+    EVT_MENU(idMenuSelectTargetDialog,              CompilerGCC::OnSelectTarget)
 
     EVT_PIPEDPROCESS_STDOUT_RANGE(idGCCProcess1,     idGCCProcess16, CompilerGCC::OnGCCOutput)
     EVT_PIPEDPROCESS_STDERR_RANGE(idGCCProcess1,     idGCCProcess16, CompilerGCC::OnGCCError)
@@ -283,7 +292,6 @@ BEGIN_EVENT_TABLE(CompilerGCC, cbCompilerPlugin)
 END_EVENT_TABLE()
 
 CompilerGCC::CompilerGCC() :
-    m_CompilerProcessList(),
     m_RealTargetsStartIndex(0),
     m_RealTargetIndex(0),
     m_PageIndex(-1),
@@ -354,7 +362,7 @@ void CompilerGCC::OnAttach()
 
     m_timerIdleWakeUp.SetOwner(this, idTimerPollCompiler);
 
-    for (int i = 0; i < MAX_TARGETS; ++i)
+    for (int i = 0; i < maxTargetInMenus; ++i)
         idMenuSelectTargetOther[i] = wxNewId();
 
     DoRegisterCompilers();
@@ -592,7 +600,7 @@ void CompilerGCC::BuildModuleMenu(const ModuleType type, wxMenu* menu, const Fil
     else if (data && data->GetKind() == FileTreeData::ftdkFile)
     {
         FileType ft = FileTypeOf(data->GetProjectFile()->relativeFilename);
-        if (ft == ftSource || ft == ftHeader)
+        if (ft == ftSource || ft == ftHeader || ft == ftTemplateSource)
         {
             // popup menu on a compilable file
             menu->AppendSeparator();
@@ -688,8 +696,13 @@ void CompilerGCC::TextURL(wxTextUrlEvent& event)
 
 void CompilerGCC::SetupEnvironment()
 {
-    Compiler* compiler = CompilerFactory::GetCompiler(m_CompilerId);
+    // Special case so "No Compiler" is valid, but I'm not sure there is
+    // any valid reason to continue with this function.
+    // If we do continue there are wx3 asserts, because of empty paths.
+    if (m_CompilerId == wxT("null"))
+        return;
 
+    Compiler* compiler = CompilerFactory::GetCompiler(m_CompilerId);
     if (!compiler)
         return;
 
@@ -719,12 +732,7 @@ void CompilerGCC::SetupEnvironment()
 
     // Get configured masterpath, expand macros and remove trailing separators
     wxString masterPath = compiler->GetMasterPath();
-    bool isNoComp = false;
-    if (m_CompilerId == wxT("null")) // Special case so "No Compiler" is valid
-    {
-        isNoComp = true;
-        masterPath.Clear();
-    }
+
     Manager::Get()->GetMacrosManager()->ReplaceMacros(masterPath);
     while (   !masterPath.IsEmpty()
            && ((masterPath.Last() == '\\') || (masterPath.Last() == '/')) )
@@ -781,7 +789,7 @@ void CompilerGCC::SetupEnvironment()
     /* TODO (jens#1#): Is the above correct ?
        Or should we search in the whole systempath (pathList in this case) for the executable? */
     // Try again...
-    if ((binPath.IsEmpty() || (pathList.Index(binPath, caseSens)==wxNOT_FOUND)) && !isNoComp)
+    if ((binPath.IsEmpty() || (pathList.Index(binPath, caseSens)==wxNOT_FOUND)))
     {
         InfoWindow::Display(_("Environment error"),
                             _("Can't find compiler executable in your configured search path's for ") + compiler->GetName() + _T('\n'));
@@ -872,7 +880,7 @@ void CompilerGCC::DoRegisterCompilers()
     CompilerFactory::RegisterCompiler(new CompilerGDC);
     CompilerFactory::RegisterCompiler(new CompilerGNUFortran);
     CompilerFactory::RegisterCompiler(new CompilerG95);
-    if (platform::windows || platform::linux || nonPlatComp)
+    if (platform::windows || platform::Linux || nonPlatComp)
         CompilerFactory::RegisterCompiler(new CompilerGNUARM);
 
     // register pure XML compilers
@@ -926,7 +934,7 @@ void CompilerGCC::DoRegisterCompilers()
                 else if (test == wxT("macosx"))
                     val = platform::macosx;
                 else if (test == wxT("linux"))
-                    val = platform::linux;
+                    val = platform::Linux;
                 else if (test == wxT("freebsd"))
                     val = platform::freebsd;
                 else if (test == wxT("netbsd"))
@@ -938,7 +946,7 @@ void CompilerGCC::DoRegisterCompilers()
                 else if (test == wxT("solaris"))
                     val = platform::solaris;
                 else if (test == wxT("unix"))
-                    val = platform::unix;
+                    val = platform::Unix;
             }
             if (val)
                 CompilerFactory::RegisterCompiler(
@@ -1037,7 +1045,12 @@ void CompilerGCC::StartCompileFile(wxFileName file)
 
     wxString fname = file.GetFullPath();
     if (!fname.IsEmpty())
+    {
+        CodeBlocksLogEvent evtSwitch(cbEVT_SWITCH_TO_LOG_WINDOW, m_pLog);
+        Manager::Get()->ProcessEvent(evtSwitch);
+
         CompileFile( UnixFilename(fname) );
+    }
 }
 
 wxString CompilerGCC::ProjectMakefile()
@@ -1134,7 +1147,9 @@ void CompilerGCC::AddToCommandQueue(const wxArrayString& commands)
 void CompilerGCC::AllocProcesses()
 {
     // create the parallel processes array
-    size_t parallel_processes = Manager::Get()->GetConfigManager(_T("compiler"))->ReadInt(_T("/parallel_processes"), 1);
+    size_t parallel_processes = Manager::Get()->GetConfigManager(_T("compiler"))->ReadInt(_T("/parallel_processes"), 0);
+    if (parallel_processes == 0)
+        parallel_processes = std::max(1, wxThread::GetCPUCount());
     m_CompilerProcessList.resize(parallel_processes);
     for (size_t i = 0; i < m_CompilerProcessList.size(); ++i)
     {
@@ -1309,7 +1324,10 @@ int CompilerGCC::DoRunQueue()
     // special shell used only for build commands
     if (!cmd->isRun)
     {
-        // run the command in a shell, so backtick'd expressions can be evaluated
+        ExpandBackticks(cmd->command);
+
+        // Run the command in a shell, so stream redirections (<, >, << and >>),
+        // piping and other shell features can be evaluated.
         if (!platform::windows)
         {
             wxString shell = Manager::Get()->GetConfigManager(_T("app"))->Read(_T("/console_shell"), DEFAULT_CONSOLE_SHELL);
@@ -1433,10 +1451,16 @@ void CompilerGCC::DoRecreateTargetMenu()
               wsp->SetPreferredTarget(tgtStr);
         }
 
+        if (m_TargetMenu)
+        {
+            m_TargetMenu->Append(idMenuSelectTargetDialog, _("Select target..."), _("Shows a dialog with all targets"));
+            m_TargetMenu->AppendSeparator();
+        }
+
         // fill the menu and combo
         for (size_t x = 0; x < m_Targets.GetCount(); ++x)
         {
-            if (m_TargetMenu)
+            if (m_TargetMenu && x < maxTargetInMenus)
             {
                 wxString help;
                 help.Printf(_("Build target '%s' in current project"), GetTargetString(x).wx_str());
@@ -1446,8 +1470,15 @@ void CompilerGCC::DoRecreateTargetMenu()
                 m_pToolTarget->Append(GetTargetString(x));
         }
 
+        if (m_TargetMenu && m_Targets.size() > maxTargetInMenus)
+        {
+            m_TargetMenu->Append(idMenuSelectTargetHasMore, _("More targets available..."),
+                                 _("Use the select target menu item to see them!"));
+            m_TargetMenu->Enable(idMenuSelectTargetHasMore, false);
+        }
+
         // connect menu events
-        Connect( idMenuSelectTargetOther[0],  idMenuSelectTargetOther[MAX_TARGETS - 1],
+        Connect( idMenuSelectTargetOther[0],  idMenuSelectTargetOther[maxTargetInMenus - 1],
                 wxEVT_COMMAND_MENU_SELECTED,
                 (wxObjectEventFunction) (wxEventFunction) (wxCommandEventFunction)
                 &CompilerGCC::OnSelectTarget );
@@ -1492,7 +1523,7 @@ void CompilerGCC::DoUpdateTargetMenu(int targetIndex)
     // update menu
     if (m_TargetMenu)
     {
-        for (int i = 0; i < MAX_TARGETS; ++i)
+        for (int i = 0; i < maxTargetInMenus; ++i)
         {
             wxMenuItem* item = m_TargetMenu->FindItem(idMenuSelectTargetOther[i]);
             if (!item || !item->IsCheckable())
@@ -2026,7 +2057,7 @@ static inline wxString getBuildTargetName(const ProjectBuildTarget *bt)
 
 bool CompilerGCC::DoCleanWithMake(ProjectBuildTarget* bt)
 {
-    const wxString &cmd = GetMakeCommandFor(mcClean, m_pBuildingProject, bt);
+    wxString cmd = GetMakeCommandFor(mcClean, m_pBuildingProject, bt);
     if (cmd.empty())
     {
         LogMessage(COMPILER_ERROR_LOG +
@@ -2048,6 +2079,7 @@ bool CompilerGCC::DoCleanWithMake(ProjectBuildTarget* bt)
     wxArrayString output, errors;
     wxSetWorkingDirectory(m_pBuildingProject->GetExecutionDir());
 
+    ExpandBackticks(cmd);
     if (showOutput)
         LogMessage(F(_("Executing clean command: %s"), cmd.wx_str()), cltNormal);
 
@@ -3225,18 +3257,37 @@ void CompilerGCC::OnKillProcess(cb_unused wxCommandEvent& event)
 
 void CompilerGCC::OnSelectTarget(wxCommandEvent& event)
 {
+    int selection = -1;
+    bool updateTools = false;
+
     if (event.GetId() == idToolTarget)
     {   // through the toolbar
-        const int sel = event.GetSelection();
-        Manager::Get()->GetProjectManager()->GetWorkspace()->SetPreferredTarget( GetTargetString(sel) );
-        DoUpdateTargetMenu(sel);
+        selection = event.GetSelection();
+    }
+    else if (event.GetId() == idMenuSelectTargetDialog)
+    {
+        // The select target menu is clicked, so we want to show a dialog with all targets
+        IncrementalSelectArrayIterator iterator(m_Targets);
+        IncrementalSelectDialog dlg(Manager::Get()->GetAppWindow(), &iterator, _("Select target..."),
+                                    _("Choose target:"));
+        if (dlg.ShowModal() == wxID_OK)
+        {
+            selection = dlg.GetSelection();
+            updateTools = true;
+        }
     }
     else
     {   // through Build->SelectTarget
-        const int i = event.GetId() - idMenuSelectTargetOther[0];
-        Manager::Get()->GetProjectManager()->GetWorkspace()->SetPreferredTarget( GetTargetString(i) );
-        DoUpdateTargetMenu(i);
-        m_pToolTarget->SetSelection(i);
+        selection = event.GetId() - idMenuSelectTargetOther[0];
+        updateTools = true;
+    }
+
+    if (selection >= 0)
+    {
+        Manager::Get()->GetProjectManager()->GetWorkspace()->SetPreferredTarget( GetTargetString(selection) );
+        DoUpdateTargetMenu(selection);
+        if (updateTools)
+            m_pToolTarget->SetSelection(selection);
     }
 }
 
@@ -3805,7 +3856,8 @@ void CompilerGCC::OnJobEnd(size_t procIndex, int exitCode)
             CodeBlocksLogEvent evtSwitch(cbEVT_SWITCH_TO_LOG_WINDOW, m_pListLog);
             Manager::Get()->ProcessEvent(evtSwitch);
 
-            m_pListLog->FocusError(m_Errors.GetFirstError());
+            if (Manager::Get()->GetConfigManager(_T("message_manager"))->ReadBool(_T("/auto_focus_build_errors"), true))
+                m_pListLog->FocusError(m_Errors.GetFirstError());
         }
         else
         {

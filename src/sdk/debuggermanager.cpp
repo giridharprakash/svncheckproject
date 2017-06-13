@@ -721,6 +721,10 @@ DebuggerManager::DebuggerManager() :
     ReadActiveDebuggerConfig(activeDebuggerName, activeConfig);
     if (activeDebuggerName.empty() && activeConfig == -1)
         m_useTargetsDefault = true;
+
+    ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
+    m_isDisassemblyMixedMode = c->ReadBool(wxT("/common/disassembly/mixed_mode"), false);
+
 }
 
 DebuggerManager::~DebuggerManager()
@@ -1277,8 +1281,11 @@ void DebuggerManager::FindTargetsDebugger()
 
     if (name.empty() || config.empty())
     {
-        log->LogError(wxString::Format(_("Current compiler '%s' doesn't have correctly defined debugger!"),
-                                       compiler->GetName().c_str()));
+        if (compiler->GetID() != wxT("null"))
+        {
+            log->LogError(wxString::Format(_("Current compiler '%s' doesn't have correctly defined debugger!"),
+                                           compiler->GetName().c_str()));
+        }
         m_menuHandler->MarkActiveTargetAsValid(false);
         return;
     }
@@ -1322,6 +1329,8 @@ bool DebuggerManager::IsDisassemblyMixedMode()
 void DebuggerManager::SetDisassemblyMixedMode(bool mixed)
 {
     m_isDisassemblyMixedMode = mixed;
+    ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
+    c->Write(wxT("/common/disassembly/mixed_mode"), m_isDisassemblyMixedMode);
 }
 
 void DebuggerManager::OnProjectActivated(cb_unused CodeBlocksEvent& event)

@@ -16,7 +16,7 @@
 #include <logmanager.h> // F()
 #include <globals.h>    // cbC2U for cbAssert macro
 
-std::auto_ptr<CCLogger> CCLogger::s_Inst;
+std::unique_ptr<CCLogger> CCLogger::s_Inst;
 
 bool           g_EnableDebugTrace     = false;
 bool           g_EnableDebugTraceFile = false; // true
@@ -31,7 +31,8 @@ long           g_idCCDebugLogger      = wxNewId();
         if ((f.Exists() && f.Open()) || (!f.Exists() && f.Create())) \
         {                                                            \
             f.AddLine(msg);                                          \
-            cbAssert(f.Write() && f.Close());                        \
+            bool exp = f.Write() && f.Close();                       \
+            cbAssert(exp);                                           \
         }                                                            \
     }                                                                \
 
@@ -42,7 +43,8 @@ long           g_idCCDebugLogger      = wxNewId();
         if ((f.Exists() && f.Open()) || (!f.Exists() && f.Create())) \
         {                                                            \
             f.AddLine(msg);                                          \
-            cbAssert(f.Write() && f.Close());                        \
+            bool exp = f.Write() && f.Close()                        \
+            cbAssert(exp);                                           \
         }                                                            \
     }                                                                \
 

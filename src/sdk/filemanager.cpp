@@ -21,6 +21,8 @@
 #include <wx/url.h>
 #include <wx/encconv.h>
 
+#include <memory>
+
 template<> FileManager* Mgr<FileManager>::instance = nullptr;
 template<> bool  Mgr<FileManager>::isShutdown = false;
 
@@ -89,7 +91,7 @@ void URLLoader::operator()()
         return;
     }
 
-    std::auto_ptr<wxInputStream> stream(url.GetInputStream());
+    std::unique_ptr<wxInputStream> stream(url.GetInputStream());
 
     if (stream.get() == nullptr || stream->IsOk() == false)
     {
@@ -181,19 +183,19 @@ namespace platform
 {
 #if defined ( __WIN32__ ) || defined ( _WIN64 )
     // Yes this is ugly. Feel free to come up with a better idea if you have one.
-	// Using the obvious wxRenameFile (or the underlying wxRename) is no option under Windows, since
-	// wxRename is simply a fuckshit wrapper around a CRT function which does not work the way
-	// the wxRename author assumes (MSVCRT rename fails if the target exists, instead of overwriting).
-	inline bool move(wxString const& old_name, wxString const& new_name)
-	{
-		// hopefully I got the unintellegible conversion stuff correct... at least it seems to work...
-		return ::MoveFileEx(wxFNCONV(old_name), wxFNCONV(new_name), MOVEFILE_REPLACE_EXISTING);
-	}
+    // Using the obvious wxRenameFile (or the underlying wxRename) is no option under Windows, since
+    // wxRename is simply a fuckshit wrapper around a CRT function which does not work the way
+    // the wxRename author assumes (MSVCRT rename fails if the target exists, instead of overwriting).
+    inline bool move(wxString const& old_name, wxString const& new_name)
+    {
+        // hopefully I got the unintellegible conversion stuff correct... at least it seems to work...
+        return ::MoveFileEx(wxFNCONV(old_name), wxFNCONV(new_name), MOVEFILE_REPLACE_EXISTING);
+    }
 #else
-	inline bool move(wxString const& old_name, wxString const& new_name)
-	{
-		return ::wxRenameFile(old_name, new_name, true);
-	};
+    inline bool move(wxString const& old_name, wxString const& new_name)
+    {
+        return ::wxRenameFile(old_name, new_name, true);
+    };
 #endif
 }
 
@@ -205,10 +207,11 @@ namespace platform
 // FileManager::Save uses FileManager::WriteWxStringToFile to write data, its operation is otherwise exactly identical.
 //
 // 1. If file does not exist, create in exclusive mode, save, return success or failure. Exclusive mode is presumably "safer".
-// 2. Otherwise (file exists), save to temporary.
-// 3. Attempt to atomically replace original with temporary.
-// 4. If this fails, rename temporary to document failure.
-// 5. No more delayed deletes -- This requires special paths for when the application shuts down
+// 2. If the file is a symlink, write directly so that the symlink structure is kept.
+// 3. Otherwise (file exists), save to temporary.
+// 4. Attempt to atomically replace original with temporary.
+// 5. If this fails, rename temporary to document failure.
+// 6. No more delayed deletes -- This requires special paths for when the application shuts down
 //    and only lends to race conditions and a possible crash-on-exit.
 //    If you can't trust your computer to sync data to disk properly, you already lost.
 
@@ -218,8 +221,17 @@ bool FileManager::SaveUTF8(const wxString& name, const char* data, size_t len)
     {
         return wxFile(name, wxFile::write_excl).Write(data, len) == len;
     }
-	else
-	{
+#if wxCHECK_VERSION(3, 0, 0)
+    else if (wxFileName::Exists(name, wxFILE_EXISTS_SYMLINK))
+    {
+        // Enable editing symlinks. Do not use temp file->replace procedure
+        // since that would get rid of the symlink. Writing directly causes
+        // edits to reflect to the target file.
+        return wxFile(name, wxFile::write).Write(data, len) == len;
+    }
+#endif // wxCHECK_VERSION(3, 0, 0)
+    else
+    {
         if (!wxFile::Access(name, wxFile::write))
             return false;
 
@@ -232,33 +244,43 @@ bool FileManager::SaveUTF8(const wxString& name, const char* data, size_t len)
         wxFile f;
         f.Create(temp, true, buff.st_mode);
 
-		if(f.Write(data, len) == len)
-		{
-			f.Close();
-			if(platform::move(temp, name))
-			{
-				return true;
-			}
-			else
-			{
-				wxString failed(name);
-				failed.append(wxT(".save-failed"));
-				platform::move(temp, failed);
-			}
-		}
-		return false;
-	}
+        if (f.Write(data, len) == len)
+        {
+            f.Close();
+            if (platform::move(temp, name))
+            {
+                return true;
+            }
+            else
+            {
+                wxString failed(name);
+                failed.append(wxT(".save-failed"));
+                platform::move(temp, failed);
+            }
+        }
+        return false;
+    }
 }
 
 bool FileManager::Save(const wxString& name, const wxString& data, wxFontEncoding encoding, bool bom)
 {
     if (wxFileExists(name) == false)
     {
-		wxFile f(name, wxFile::write_excl);
+        wxFile f(name, wxFile::write_excl);
         return WriteWxStringToFile(f, data, encoding, bom);
     }
-	else
-	{
+#if wxCHECK_VERSION(3, 0, 0)
+    else if (wxFileName::Exists(name, wxFILE_EXISTS_SYMLINK))
+    {
+        // Enable editing symlinks. Do not use temp file->replace procedure
+        // since that would get rid of the symlink. Writing directly causes
+        // edits to reflect to the target file.
+        wxFile f(name, wxFile::write);
+        return WriteWxStringToFile(f, data, encoding, bom);
+    }
+#endif // wxCHECK_VERSION(3, 0, 0)
+    else
+    {
         if (!wxFile::Access(name, wxFile::write))
             return false;
 
@@ -271,22 +293,22 @@ bool FileManager::Save(const wxString& name, const wxString& data, wxFontEncodin
         wxFile f;
         f.Create(temp, true, buff.st_mode);
 
-        if(WriteWxStringToFile(f, data, encoding, bom))
-		{
-			f.Close();
-			if(platform::move(temp, name))
-			{
-				return true;
-			}
-			else
-			{
-				wxString failed(name);
-				failed.append(wxT(".save-failed"));
-				platform::move(temp, failed);
-			}
-		}
-		return false;
-	}
+        if (WriteWxStringToFile(f, data, encoding, bom))
+        {
+            f.Close();
+            if (platform::move(temp, name))
+            {
+                return true;
+            }
+            else
+            {
+                wxString failed(name);
+                failed.append(wxT(".save-failed"));
+                platform::move(temp, failed);
+            }
+        }
+        return false;
+    }
 }
 
 

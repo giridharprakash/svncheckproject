@@ -8,10 +8,11 @@ pluginlibdir = $(pkglibdir)/plugins
 
 pluginlib_LTLIBRARIES = libDoxyBlocks.la
 
-libDoxyBlocks_la_LDFLAGS = -module -version-info 0:1:0 -shared -no-undefined -avoid-version
+libDoxyBlocks_la_LDFLAGS = @MODULE_SHARED_LDFLAGS@ -version-info 0:1:0 -no-undefined -avoid-version
 
 libDoxyBlocks_la_LIBADD = ../../../sdk/libcodeblocks.la \
-			$(WX_LIBS)
+			$(WX_LIBS) \
+			$(CB_TINYXML_LIBS)
 
 libDoxyBlocks_la_SOURCES = AutoDoc.cpp \
 				Config.cpp \

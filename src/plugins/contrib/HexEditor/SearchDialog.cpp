@@ -128,7 +128,7 @@ void SearchDialog::BuildContent(wxWindow* parent)
 	BoxSizer3->Add(m_Direction, 1, wxALL|wxEXPAND, 5);
 	BoxSizer1->Add(BoxSizer3, 0, wxTOP|wxEXPAND, 5);
 	StdDialogButtonSizer1 = new wxStdDialogButtonSizer();
-	StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_OK, wxEmptyString));
+	StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_OK, _("&Find")));
 	StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_CANCEL, wxEmptyString));
 	StdDialogButtonSizer1->Realize();
 	BoxSizer1->Add(StdDialogButtonSizer1, 1, wxBOTTOM|wxLEFT|wxRIGHT|wxEXPAND, 5);
@@ -162,6 +162,9 @@ void SearchDialog::BuildContent(wxWindow* parent)
 	m_SearchTypeExpression->SetValue( type==2 );
 
 	Connect( wxID_OK, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(SearchDialog::OnOk) );
+
+    // Limit vertical resizing.
+    SetMaxSize(wxSize(-1, GetMinHeight()));
 }
 
 SearchDialog::~SearchDialog()

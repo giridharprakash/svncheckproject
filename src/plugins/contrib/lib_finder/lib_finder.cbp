@@ -45,6 +45,7 @@
 			<Add directory="$(#WX.include)" />
 			<Add directory="$(#WX.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="../../../include" />
+			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../include/scripting/include" />
@@ -70,7 +71,6 @@
 			<Add library="codeblocks" />
 			<Add directory="$(#WX.lib)/gcc_dll$(WX_CFG)" />
 			<Add directory="../../../devel" />
-			<Add directory="../../../base/tinyxml" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="update.bat" />

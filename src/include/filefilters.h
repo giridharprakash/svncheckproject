@@ -90,6 +90,8 @@ namespace FileFilters
     extern const DLLIMPORT wxString CXX_EXT;
     extern const DLLIMPORT wxString CPLPL_EXT;
     extern const DLLIMPORT wxString INL_EXT;
+    extern const DLLIMPORT wxString TPP_EXT;
+    extern const DLLIMPORT wxString TCC_EXT;
     extern const DLLIMPORT wxString H_EXT;
     extern const DLLIMPORT wxString HH_EXT;
     extern const DLLIMPORT wxString HPP_EXT;
@@ -137,6 +139,8 @@ namespace FileFilters
     extern const DLLIMPORT wxString CXX_DOT_EXT;
     extern const DLLIMPORT wxString CPLPL_DOT_EXT;
     extern const DLLIMPORT wxString INL_DOT_EXT;
+    extern const DLLIMPORT wxString TPP_DOT_EXT;
+    extern const DLLIMPORT wxString TCC_DOT_EXT;
     extern const DLLIMPORT wxString H_DOT_EXT;
     extern const DLLIMPORT wxString HH_DOT_EXT;
     extern const DLLIMPORT wxString HPP_DOT_EXT;

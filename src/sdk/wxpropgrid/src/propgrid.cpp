@@ -566,6 +566,7 @@ wxPGGlobalVarsClass::~wxPGGlobalVarsClass()
 
 IMPLEMENT_ABSTRACT_CLASS(wxPGProperty, wxObject)
 
+wxString wxString_wxPG_LABEL = wxT("_LABEL_AS_NAME");
 
 void wxPGProperty::Init()
 {
@@ -602,11 +603,10 @@ void wxPGProperty::Init()
 
 void wxPGProperty::Init( const wxString& label, const wxString& name )
 {
-    if ( &label != ((wxString*)NULL) )
-        m_label = label;
+    m_label = label;
 
 #ifndef __WXPYTHON__
-    if ( &name != ((wxString*)NULL) )
+    if ( name != wxString_wxPG_LABEL)
 #else
     if ( (&name != ((wxString*)NULL)) && name != wxT("_LABEL_AS_NAME") )
 #endif
@@ -1876,7 +1876,7 @@ void wxPGProperty::SetValueImage( wxBitmap& bmp )
 {
     delete m_valueBitmap;
 
-    if ( &bmp && bmp.Ok() )
+    if ( bmp.Ok() )
     {
         // Resize the image
         wxSize maxSz = GetGrid()->GetImageSize();
@@ -2823,7 +2823,7 @@ wxPGCell::wxPGCell( const wxString& text,
     : m_bitmap(bitmap), m_fgCol(fgCol), m_bgCol(bgCol)
 {
 #ifndef __WXPYTHON__
-    if ( &text != ((wxString*)NULL) )
+    if ( text != wxString_wxPG_LABEL )
 #else
     if ( (&text != ((wxString*)NULL)) && text != wxT("_LABEL_AS_NAME") )
 #endif
@@ -7387,9 +7387,9 @@ bool wxPropertyGrid::DoSelectProperty( wxPGProperty* p, unsigned int flags )
 /* C::B begin */
     struct UnsetValue
     {
-        UnsetValue(bool &value) : value(value) {}
-        ~UnsetValue() { value = false; }
-        bool &value;
+        UnsetValue(bool &value) : m_value(value) {}
+        ~UnsetValue() { m_value = false; }
+        bool &m_value;
     };
     UnsetValue unsetValue(m_inDoSelectProperty);
 /* C::B end */
@@ -8367,7 +8367,6 @@ bool wxPropertyGrid::HandleMouseMove( int x, unsigned int y, wxMouseEvent &event
         {
 
             int newSplitterX = x - m_dragOffset;
-            int splitterX = x - splitterHitOffset;
 
             // Splitter redraw required?
             if ( newSplitterX != splitterX )
@@ -10234,7 +10233,7 @@ void wxPGChoices::Add( const wxArrayString& arr, const wxArrayInt& arrint )
     for ( i = 0; i < itemcount; i++ )
     {
         int value = wxPG_INVALID_VALUE;
-        if ( &arrint && arrint.size() )
+        if ( arrint.size() )
             value = arrint[i];
         m_data->Insert( -1, new wxPGChoiceEntry(arr[i], value) );
     }
@@ -10290,7 +10289,7 @@ wxArrayString wxPGChoices::GetLabels() const
     wxArrayString arr;
     unsigned int i;
 
-    if ( this && IsOk() )
+    if ( IsOk() )
         for ( i=0; i<GetCount(); i++ )
             arr.push_back(GetLabel(i));
 
@@ -11054,13 +11053,13 @@ wxString wxPropertyGridInterface::SaveEditableState( int includedStates ) const
     //
     // Save state on page basis
     size_t pageIndex = 0;
-    wxPropertyGridState* pageState = GetPageState(pageIndex);
+    wxPropertyGridState* pageStateIdx = GetPageState(pageIndex);
     wxArrayPtrVoid pageStates;
-    while ( pageState )
+    while ( pageStateIdx )
     {
-        pageStates.Add(pageState);
+        pageStates.Add(pageStateIdx);
         pageIndex += 1;
-        pageState = GetPageState(pageIndex);
+        pageStateIdx = GetPageState(pageIndex);
     }
 
     for ( pageIndex=0; pageIndex < pageStates.size(); pageIndex++ )

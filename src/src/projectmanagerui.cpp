@@ -18,6 +18,7 @@
     #include <wx/dir.h>
     #include <wx/filedlg.h>
     #include <wx/imaglist.h>
+    #include <wx/listctrl.h>
     #include <wx/menu.h>
     #include <wx/settings.h>
     #include <wx/textdlg.h>
@@ -31,17 +32,20 @@
     #include "logmanager.h"
 #endif
 
+#include <unordered_map>
+
 #include "cbauibook.h"
 #include "cbcolourmanager.h"
 #include "confirmreplacedlg.h"
 #include "filefilters.h"
 #include "filegroupsandmasks.h"
-#include "incrementalselectlistdlg.h"
 #include "multiselectdlg.h"
 #include "projectdepsdlg.h"
 #include "projectfileoptionsdlg.h"
 #include "projectoptionsdlg.h"
 #include "projectsfilemasksdlg.h"
+
+#include "goto_file.h"
 
 namespace
 {
@@ -292,7 +296,7 @@ void ProjectManagerUI::BuildTree()
 
 void ProjectManagerUI::RebuildTree()
 {
-    if (Manager::IsAppShuttingDown() || Manager::IsBatchBuild()) // saves a lot of time at startup for large projects
+    if (Manager::IsAppShuttingDown()) // saves a lot of time at startup for large projects
         return;
 
     FreezeTree();
@@ -763,7 +767,7 @@ void ProjectManagerUI::DoOpenFile(ProjectFile* pf, const wxString& filename)
     }
 
     FileType ft = FileTypeOf(filename);
-    if (ft == ftHeader || ft == ftSource)
+    if (ft == ftHeader || ft == ftSource || ft == ftTemplateSource)
     {
         // C/C++ header/source files, always get opened inside Code::Blocks
         if ( cbEditor* ed = Manager::Get()->GetEditorManager()->Open(filename) )
@@ -1778,22 +1782,29 @@ struct ProjectFileRelativePathCmp
         else if (pf1->GetParentProject() != m_pActiveProject && pf2->GetParentProject() == m_pActiveProject)
             return false;
         else
-            return pf1->relativeFilename.Cmp(pf2->relativeFilename) < 0;
+        {
+            int relCmp = pf1->relativeFilename.Cmp(pf2->relativeFilename);
+
+            if (relCmp == 0)
+                return pf1 < pf2;
+            else
+                return relCmp < 0;
+        }
     }
 private:
     cbProject* m_pActiveProject;
 };
 
-struct ProjectFileAbsolutePathCmp
+struct cbStringHash
 {
-    bool operator()(ProjectFile* pf1, ProjectFile* pf2)
-    { return pf1->file.GetFullPath().Cmp(pf2->file.GetFullPath()) < 0; }
-};
-
-struct ProjectFileAbsolutePathEqual
-{
-    bool operator()(ProjectFile* pf1, ProjectFile* pf2)
-    { return pf1->file.GetFullPath() == pf2->file.GetFullPath(); }
+    size_t operator()(const wxString& s) const
+    {
+#if wxCHECK_VERSION(3, 0, 0)
+        return std::hash<std::wstring>()(s.ToStdWstring());
+#else
+        return std::hash<std::wstring>()(s.wc_str());
+#endif // wxCHECK_VERSION
+    }
 };
 
 void ProjectManagerUI::OnGotoFile(cb_unused wxCommandEvent& event)
@@ -1809,58 +1820,105 @@ void ProjectManagerUI::OnGotoFile(cb_unused wxCommandEvent& event)
 
     ProjectsArray* pa = pm->GetProjects();
 
-    typedef std::vector<ProjectFile*> VProjectFiles;
-    VProjectFiles pfiles;
+    std::unordered_map<wxString, ProjectFile*, cbStringHash> uniqueAbsPathFiles;
     for (size_t prjIdx = 0; prjIdx < pa->GetCount(); ++prjIdx)
     {
         cbProject* prj = (*pa)[prjIdx];
         if (!prj) continue;
 
         for (FilesList::iterator it = prj->GetFilesList().begin(); it != prj->GetFilesList().end(); ++it)
-            pfiles.push_back(*it);
+        {
+            ProjectFile *projectFile = *it;
+            uniqueAbsPathFiles.insert({projectFile->file.GetFullPath(), projectFile});
+        }
     }
 
-    if (!pfiles.empty())
+    typedef std::vector<ProjectFile*> VProjectFiles;
+    VProjectFiles pfiles;
+    if (!uniqueAbsPathFiles.empty())
     {
-        std::sort(pfiles.begin(), pfiles.end(), ProjectFileAbsolutePathCmp());
-        VProjectFiles::iterator last = std::unique(pfiles.begin(), pfiles.end(), ProjectFileAbsolutePathEqual());
-
-        if (last != pfiles.end())
-            pfiles.erase(last, pfiles.end());
-
+        pfiles.reserve(uniqueAbsPathFiles.size());
+        for (const auto &pf : uniqueAbsPathFiles)
+            pfiles.push_back(pf.second);
         std::sort(pfiles.begin(), pfiles.end(), ProjectFileRelativePathCmp(activePrj));
     }
 
-    class Iterator : public IncrementalSelectIterator
+    struct Iterator : IncrementalSelectIteratorIndexed
     {
-        public:
-            Iterator(VProjectFiles& pfiles, bool showProject) : m_PFiles(pfiles), m_ShowProject(showProject) {}
-            virtual long GetCount() const              { return m_PFiles.size();                    }
-            virtual wxString GetItem(long index) const { return m_PFiles[index]->relativeFilename; }
-            virtual wxString GetDisplayItem(long index) const
+        Iterator(VProjectFiles &pfiles, bool showProject) :
+            m_pfiles(pfiles),
+            m_ShowProject(showProject),
+            m_ColumnWidth(300)
+        {
+        }
+
+        int GetTotalCount() const override
+        {
+            return m_pfiles.size();
+        }
+        const wxString& GetItemFilterString(int index) const override
+        {
+            return m_pfiles[index]->relativeFilename;
+        }
+        wxString GetDisplayText(int index, int column) const override
+        {
+            ProjectFile* pf = m_pfiles[m_indices[index]];
+            return MakeDisplayName(*pf);
+        }
+        int GetColumnWidth(int column) const override
+        {
+            return m_ColumnWidth;
+        }
+
+        void CalcColumnWidth(wxListCtrl &list) override
+        {
+            int length = 0;
+            ProjectFile *pfLongest = nullptr;
+            for (const auto &pf : m_pfiles)
             {
+                int pfLength = pf->relativeFilename.length();
                 if (m_ShowProject)
+                    pfLength += pf->GetParentProject()->GetTitle().length() + 3;
+                if (pfLength > length)
                 {
-                    if ( ProjectFile* pf = m_PFiles[index] )
-                        return pf->relativeFilename + wxT(" (") + pf->GetParentProject()->GetTitle() + wxT(")");
-                    return wxEmptyString;
+                    length = pfLength;
+                    pfLongest = pf;
                 }
-                else
-                    return m_PFiles[index]->relativeFilename;
             }
-        private:
-            VProjectFiles& m_PFiles;
-            bool           m_ShowProject;
+            if (pfLongest)
+            {
+                const wxString &longestString = MakeDisplayName(*pfLongest);
+                int yTemp;
+                list.GetTextExtent(longestString, &m_ColumnWidth, &yTemp);
+                // just to be safe if the longest string is made of thin letters.
+                m_ColumnWidth += 50;
+            }
+            else
+                m_ColumnWidth = 300;
+        }
+
+    private:
+        wxString MakeDisplayName(ProjectFile &pf) const
+        {
+            if (m_ShowProject)
+                return pf.relativeFilename + wxT(" (") + pf.GetParentProject()->GetTitle() + wxT(")");
+            else
+                return pf.relativeFilename;
+        }
+    private:
+        const VProjectFiles &m_pfiles;
+        wxString temp;
+        bool m_ShowProject;
+        int m_ColumnWidth;
     };
 
-    Iterator iterator(pfiles, pa->GetCount() > 1);
-    IncrementalSelectListDlg dlg(Manager::Get()->GetAppWindow(), iterator,
-                                 _("Select file..."), _("Please select file to open:"));
+    Iterator iterator(pfiles, (pa->GetCount() > 1));
+    GotoFile dlg(Manager::Get()->GetAppWindow(), &iterator, _("Select file..."), _("Please select file to open:"));
     PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)
     {
-        long selection = dlg.GetSelection();
-        if (selection != -1)
+        int selection = dlg.GetSelection();
+        if (selection >= 0 && selection < int(pfiles.size()))
             DoOpenFile(pfiles[selection], pfiles[selection]->file.GetFullPath());
     }
 }
@@ -1983,19 +2041,70 @@ void ProjectManagerUI::OnFindFile(cb_unused wxCommandEvent& event)
             fileNameMap[file.GetFullName()] = prj->GetTitle();
         }
     }
-    IncrementalSelectIteratorStringArray iter(files);
-    IncrementalSelectListDlg dlg(Manager::Get()->GetAppWindow(), iter, _("Find file..."),
-                                 _("Please enter the name of the file you are searching:"));
-    wxSize         sz      = dlg.GetSize();
-    wxListBox*     listBx  = XRCCTRL(dlg, "lstItems", wxListBox);
-    wxCheckBox*    chkOpen = new wxCheckBox(&dlg, wxID_ANY, _("Open file"));
-    ConfigManager* cfg     = Manager::Get()->GetConfigManager(wxT("project_manager"));
+
+    struct Iterator : IncrementalSelectIteratorIndexed
+    {
+        Iterator(const wxArrayString &files) : m_files(files), m_ColumnWidth(300)
+        {
+        }
+
+        int GetTotalCount() const override
+        {
+            return m_files.size();
+        }
+        const wxString& GetItemFilterString(int index) const override
+        {
+            return m_files[index];
+        }
+        wxString GetDisplayText(int index, int column) const override
+        {
+            return m_files[m_indices[index]];
+        }
+
+        int GetColumnWidth(int column) const override
+        {
+            return m_ColumnWidth;
+        }
+
+        void CalcColumnWidth(wxListCtrl &list) override
+        {
+            int index = -1;
+            size_t length = 0;
+            for (size_t ii = 0; ii < m_files.size(); ++ii)
+            {
+                size_t itemLength = m_files[ii].length();
+                if (itemLength > length)
+                {
+                    index = ii;
+                    length = itemLength;
+                }
+            }
+            if (index >= 0 && index < int(m_files.size()))
+            {
+                int yTemp;
+                list.GetTextExtent(m_files[index], &m_ColumnWidth, &yTemp);
+                // just to be safe if the longest string is made of thin letters.
+                m_ColumnWidth += 50;
+            }
+            else
+                m_ColumnWidth = 300;
+        }
+
+    private:
+        const wxArrayString &m_files;
+        int m_ColumnWidth;
+    };
+    Iterator iter(files);
+    GotoFile dlg(Manager::Get()->GetAppWindow(), &iter, _("Find file..."),
+                 _("Please enter the name of the file you are searching:"));
+
+    ConfigManager *cfg = Manager::Get()->GetConfigManager(wxT("project_manager"));
+
+    // Add a checkbox at the bottom that control if the selected file will be opened in an editor.
+    wxCheckBox *chkOpen = new wxCheckBox(&dlg, wxID_ANY, _("Open file"));
     chkOpen->SetValue(cfg->ReadBool(wxT("/find_file_open"), false));
-    // insert the check box into the dialogue
-    listBx->GetParent()->GetSizer()->Add(chkOpen, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_RIGHT, 8);
-    dlg.Fit();
-    dlg.SetMinSize(dlg.GetSize());
-    dlg.SetSize(sz);
+    dlg.AddControlBelowList(chkOpen);
+
     PlaceWindow(&dlg);
     if (dlg.ShowModal() != wxID_OK)
         return;
@@ -2436,8 +2545,6 @@ void ProjectManagerUI::ConfigureProjectDependencies(cbProject* base)
 
 void ProjectManagerUI::CheckForExternallyModifiedProjects()
 {
-    if (Manager::IsBatchBuild())
-        return;
     if (m_isCheckingForExternallyModifiedProjects) // for some reason, a mutex locker does not work???
         return;
     m_isCheckingForExternallyModifiedProjects = true;
@@ -2499,12 +2606,14 @@ namespace
 
 static void ProjectTreeSortChildrenRecursive(cbTreeCtrl* tree, const wxTreeItemId& parent)
 {
-    wxTreeItemIdValue cookie = nullptr;
+    if (!tree->ItemHasChildren(parent))
+        return;
 
     tree->SortChildren(parent);
 
+    wxTreeItemIdValue cookie = nullptr;
     wxTreeItemId current = tree->GetFirstChild(parent, cookie);
-    while (current && tree->ItemHasChildren(current))
+    while (current)
     {
         ProjectTreeSortChildrenRecursive(tree, current);
         current = tree->GetNextChild(parent, cookie);
@@ -3167,10 +3276,12 @@ void ProjectManagerUI::BuildProjectTree(cbProject* project, cbTreeCtrl* tree, co
             }
             else // else try to match a group
             {
+                const wxFileName fname(pf->relativeToCommonTopLevelPath);
+                const wxString &fnameFullname = fname.GetFullName();
+
                 for (unsigned int i = 0; i < fgam->GetGroupsCount(); ++i)
                 {
-                    wxFileName fname(pf->relativeToCommonTopLevelPath);
-                    if (fgam->MatchesMask(fname.GetFullName(), i))
+                    if (fgam->MatchesMask(fnameFullname, i))
                     {
                         parentNode = pGroupNodes[i];
                         found = true;

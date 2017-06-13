@@ -171,7 +171,7 @@ void DoxyBlocks::DoLineComment()
     if (!cbEd)
         return;
 
-        cbStyledTextCtrl *control = cbEd->GetControl();
+    cbStyledTextCtrl *control = cbEd->GetControl();
     int iPos = control->GetCurrentPos();
 
     wxString sComment;
@@ -400,6 +400,10 @@ void DoxyBlocks::CommentFunction(cbStyledTextCtrl * control, int &iPos, wxString
                 sParam = arElements[1] + sSpace + arElements[0];
         }
         // The regex ensures that we don't have any other arrangements of params.
+
+        // Remove comment tokens
+        sParam.Replace( wxT("/*"), wxT(""), true );
+        sParam.Replace( wxT("*/"), wxT(""), true );
 
         AddCommentLine(control, iPos, sIndent + sMidComment + sTagParam + sSpace + sParam);
     }

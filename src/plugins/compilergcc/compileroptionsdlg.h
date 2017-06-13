@@ -96,10 +96,10 @@ class CompilerOptionsDlg : public cbConfigurationPanel
         void OnRemoveLibClick(wxCommandEvent& event);
         void OnClearLibClick(wxCommandEvent& event);
         void OnCopyLibsClick(wxCommandEvent& event);
-        void OnMoveLibUpClick(wxSpinEvent& event);
-        void OnMoveLibDownClick(wxSpinEvent& event);
-        void OnMoveDirUpClick(wxSpinEvent& event);
-        void OnMoveDirDownClick(wxSpinEvent& event);
+        void OnMoveLibUpClick(wxCommandEvent& event);
+        void OnMoveLibDownClick(wxCommandEvent& event);
+        void OnMoveDirUpClick(wxCommandEvent& event);
+        void OnMoveDirDownClick(wxCommandEvent& event);
         void OnMasterPathClick(wxCommandEvent& event);
         void OnAutoDetectClick(wxCommandEvent& event);
         void OnSelectProgramClick(wxCommandEvent& event);

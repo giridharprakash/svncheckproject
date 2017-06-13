@@ -484,7 +484,7 @@ bool CodeBlocksApp::InitXRCStuff()
 
 MainFrame* CodeBlocksApp::InitFrame()
 {
-    CompileTimeAssertion<wxMinimumVersion<2,8,12>::eval>::Assert();
+    static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
 
     MainFrame *frame = new MainFrame();
     wxUpdateUIEvent::SetUpdateInterval(100);
@@ -1320,9 +1320,9 @@ void CodeBlocksApp::OnAppActivate(wxActivateEvent& event)
         // so : idEditorManagerCheckFiles, EditorManager::OnCheckForModifiedFiles just exist for this workaround
         wxCommandEvent evt(wxEVT_COMMAND_MENU_SELECTED, idEditorManagerCheckFiles);
         wxPostEvent(Manager::Get()->GetEditorManager(), evt);
-        ProjectManagerUI *prjManUI = m_Frame->GetProjectManagerUI();
+        cbProjectManagerUI *prjManUI = m_Frame->GetProjectManagerUI();
         if (prjManUI)
-            prjManUI->CheckForExternallyModifiedProjects();
+            static_cast<ProjectManagerUI*>(prjManUI)->CheckForExternallyModifiedProjects();
     }
     cbEditor* ed = Manager::Get()->GetEditorManager()
                  ? Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor() : nullptr;

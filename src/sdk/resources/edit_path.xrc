@@ -12,33 +12,32 @@
 						<object class="wxStaticText" name="lblText">
 							<label>Directory:</label>
 						</object>
-						<flag>wxTOP|wxALIGN_CENTER_VERTICAL</flag>
-						<border>4</border>
+						<flag>wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
 					</object>
 					<object class="sizeritem">
 						<object class="wxTextCtrl" name="txtPath" />
-						<flag>wxLEFT|wxRIGHT|wxEXPAND</flag>
-						<border>8</border>
-						<minsize>240,-1</minsize>
+						<flag>wxLEFT|wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
 						<option>1</option>
 					</object>
 					<object class="sizeritem">
-						<object class="wxButton" name="btnBrowse">
-							<label>...</label>
-							<tooltip>Browse</tooltip>
+						<object class="wxBitmapButton" name="btnBrowse">
+							<bitmap stock_id="wxART_FILE_OPEN" stock_client="wxART_BUTTON" />
 						</object>
-						<flag>wxALIGN_LEFT</flag>
-						<minsize>24,24</minsize>
+						<flag>wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+					</object>
+					<object class="sizeritem">
+						<object class="wxBitmapButton" name="btnOther">
+							<bitmap stock_id="wxART_EXECUTABLE_FILE" stock_client="wxART_BUTTON" />
+						</object>
+						<flag>wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
 					</object>
 				</object>
 				<flag>wxALL|wxEXPAND</flag>
-				<border>8</border>
-			</object>
-			<object class="sizeritem">
-				<object class="wxStaticLine" name="ID_STATICLINE1" />
-				<flag>wxLEFT|wxRIGHT|wxEXPAND</flag>
-				<border>8</border>
-				<option>1</option>
+				<border>5</border>
 			</object>
 			<object class="sizeritem">
 				<object class="wxStdDialogButtonSizer">
@@ -53,8 +52,8 @@
 						</object>
 					</object>
 				</object>
-				<flag>wxALL|wxEXPAND</flag>
-				<border>8</border>
+				<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+				<border>5</border>
 			</object>
 		</object>
 	</object>

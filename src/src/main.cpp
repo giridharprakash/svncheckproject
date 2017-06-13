@@ -740,12 +740,17 @@ void MainFrame::CreateIDE()
 
     // management panel
     m_pPrjMan = Manager::Get()->GetProjectManager();
-    m_pPrjManUI = new ProjectManagerUI;
+    if (!Manager::IsBatchBuild())
+    {
+        m_pPrjManUI = new ProjectManagerUI;
+        m_LayoutManager.AddPane( m_pPrjManUI->GetNotebook(),
+                                 wxAuiPaneInfo().Name(wxT("ManagementPane")).Caption(_("Management")).
+                                     BestSize(wxSize(leftW, clientsize.GetHeight())).
+                                     MinSize(wxSize(100,100)).Left().Layer(1) );
+    }
+    else
+        m_pPrjManUI = new BatchProjectManagerUI;
     m_pPrjMan->SetUI(m_pPrjManUI);
-    m_LayoutManager.AddPane( m_pPrjManUI->GetNotebook(),
-                             wxAuiPaneInfo().Name(wxT("ManagementPane")).Caption(_("Management")).
-                                 BestSize(wxSize(leftW, clientsize.GetHeight())).
-                                 MinSize(wxSize(100,100)).Left().Layer(1) );
 
     // logs manager
     SetupGUILogging();
@@ -770,7 +775,8 @@ void MainFrame::CreateIDE()
     DoUpdateEditorStyle();
 
     m_pEdMan->GetNotebook()->SetDropTarget(new cbFileDropTarget(this));
-    m_pPrjManUI->GetNotebook()->SetDropTarget(new cbFileDropTarget(this));
+    if (m_pPrjManUI->GetNotebook())
+        m_pPrjManUI->GetNotebook()->SetDropTarget(new cbFileDropTarget(this));
 
     Manager::Get()->GetColourManager()->Load();
 }
@@ -836,8 +842,11 @@ void MainFrame::SetupDebuggerUI()
     m_debuggerMenuHandler->SetEvtHandlerEnabled(true);
     m_debuggerToolbarHandler->SetEvtHandlerEnabled(true);
 
-    Manager::Get()->GetDebuggerManager()->SetInterfaceFactory(new DebugInterfaceFactory);
-    m_debuggerMenuHandler->RegisterDefaultWindowItems();
+    if (!Manager::IsBatchBuild())
+    {
+        Manager::Get()->GetDebuggerManager()->SetInterfaceFactory(new DebugInterfaceFactory);
+        m_debuggerMenuHandler->RegisterDefaultWindowItems();
+    }
 }
 
 DECLARE_INSTANCE_TYPE(MainFrame);
@@ -1026,7 +1035,8 @@ void MainFrame::CreateMenubar()
     m_HelpPluginsMenu = pluginsM ? pluginsM : new wxMenu();
 
     // core modules: create menus
-    m_pPrjManUI->CreateMenu(mbar);
+    if (!Manager::IsBatchBuild())
+        static_cast<ProjectManagerUI*>(m_pPrjManUI)->CreateMenu(mbar);
     Manager::Get()->GetDebuggerManager()->SetMenuHandler(m_debuggerMenuHandler);
 
     // ask all plugins to rebuild their menus
@@ -1278,7 +1288,8 @@ void MainFrame::LoadWindowState()
     LoadViewLayout(deflayout);
 
     // load manager and messages selected page
-    m_pPrjManUI->GetNotebook()->SetSelection(Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/main_frame/layout/left_block_selection"), 0));
+    if (m_pPrjManUI->GetNotebook())
+        m_pPrjManUI->GetNotebook()->SetSelection(Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/main_frame/layout/left_block_selection"), 0));
     m_pInfoPane->SetSelection(Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/main_frame/layout/bottom_block_selection"), 0));
 
     // Cryogen 23/3/10 wxAuiNotebook can't set it's own tab position once instantiated, for some reason. This code fails in InfoPane::InfoPane().
@@ -1367,8 +1378,11 @@ void MainFrame::SaveWindowState()
     }
 
     // save manager and messages selected page
-    Manager::Get()->GetConfigManager(_T("app"))->Write(_T("/main_frame/layout/left_block_selection"),
-                                                       m_pPrjManUI->GetNotebook()->GetSelection());
+    if (m_pPrjManUI->GetNotebook())
+    {
+        int selection = m_pPrjManUI->GetNotebook()->GetSelection();
+        Manager::Get()->GetConfigManager(_T("app"))->Write(_T("/main_frame/layout/left_block_selection"), selection);
+    }
     Manager::Get()->GetConfigManager(_T("app"))->Write(_T("/main_frame/layout/bottom_block_selection"), m_pInfoPane->GetSelection());
 
     // save display, window size and position
@@ -1797,6 +1811,8 @@ bool MainFrame::OpenGeneric(const wxString& filename, bool addToHistory)
             // fallthrough
         case ftSource:
             // fallthrough
+        case ftTemplateSource:
+            // fallthrough
         case ftResource:
             return DoOpenFile(filename, addToHistory);
         //
@@ -1869,30 +1885,34 @@ void MainFrame::DoCreateStatusBar()
     int h;
     size_t num = 0;
 
-    wxCoord width[16]; // 16 max
-    width[num++] = -1; // main field
+    wxCoord widths[16]; // 16 max
+    widths[num++] = -1; // main field
 
-    dc.GetTextExtent(_(" Highlight Button "),       &width[num++], &h);
-    dc.GetTextExtent(_(" Windows (CR+LF) "),        &width[num++], &h);
-    dc.GetTextExtent(_(" WINDOWS-1252 "),           &width[num++], &h);
-    dc.GetTextExtent(_(" Line 12345, Column 123 "), &width[num++], &h);
-    dc.GetTextExtent(_(" Overwrite "),              &width[num++], &h);
-    dc.GetTextExtent(_(" Modified "),               &width[num++], &h);
-    dc.GetTextExtent(_(" Read/Write "),             &width[num++], &h);
-    dc.GetTextExtent(_(" name_of_profile "),        &width[num++], &h);
+    dc.GetTextExtent(_(" Highlight Button "), &widths[num++], &h);
+    dc.GetTextExtent(_(" Windows (CR+LF) "), &widths[num++], &h);
+    dc.GetTextExtent(_(" WINDOWS-1252 "), &widths[num++], &h);
+    dc.GetTextExtent(_(" Line 12345, Col 123, Pos 123456 "), &widths[num++], &h);
+    dc.GetTextExtent(_(" Overwrite "), &widths[num++], &h);
+    dc.GetTextExtent(_(" Modified "), &widths[num++], &h);
+    dc.GetTextExtent(_(" Read/Write "), &widths[num++], &h);
+    dc.GetTextExtent(_(" name_of_profile "), &widths[num++], &h);
 
     wxStatusBar* sb = CreateStatusBar(num);
-    if (!sb) return;
+    if (!sb)
+        return;
 
-    SetStatusWidths(num, width);
+    SetStatusWidths(num, widths);
 
     // Highlightbutton
     wxRect rect;
-    if ( sb->GetFieldRect(1, rect) )
+    if (sb->GetFieldRect(1, rect))
     {
-      m_pHighlightButton = new wxButton(sb, idHighlightButton, wxEmptyString,
-                                        rect.GetPosition(), rect.GetSize(),
-                                        wxNO_BORDER|wxBU_LEFT);
+        m_pHighlightButton = new wxButton(sb, idHighlightButton, wxT("bla"), wxDefaultPosition, wxDefaultSize,
+                                          wxBORDER_NONE|wxBU_LEFT|wxBU_EXACTFIT);
+        // Adjust status bar height to fit the button.
+        // This affects wx3.x build more than wx2.8 builds. At least on wxGTK.
+        const int height = std::max(sb->GetMinHeight(), m_pHighlightButton->GetClientSize().GetHeight());
+        sb->SetMinHeight(height);
     }
 }
 
@@ -1905,8 +1925,10 @@ void MainFrame::DoUpdateStatusBar()
     wxString personality(Manager::Get()->GetPersonalityManager()->GetPersonality());
     if (ed)
     {
+        cbStyledTextCtrl * const control = ed->GetControl();
+
         int panel = 0;
-        int pos = ed->GetControl()->GetCurrentPos();
+        int pos = control->GetCurrentPos();
         wxString msg;
         SetStatusText(ed->GetFilename(), panel++);
 
@@ -1921,7 +1943,7 @@ void MainFrame::DoUpdateStatusBar()
         }
         // EOL mode
         panel++;
-        switch (ed->GetControl()->GetEOLMode())
+        switch (control->GetEOLMode())
         {
             case wxSCI_EOL_CRLF: msg = _T("Windows (CR+LF)"); break;
             case wxSCI_EOL_CR:   msg = _T("Mac (CR)");        break;
@@ -1930,15 +1952,15 @@ void MainFrame::DoUpdateStatusBar()
         }
         SetStatusText(msg, panel++);
         SetStatusText(ed->GetEncodingName(), panel++);
-        msg.Printf(_("Line %d, Column %d"), ed->GetControl()->GetCurrentLine() + 1, ed->GetControl()->GetColumn(pos) + 1);
+        msg.Printf(_("Line %d, Col %d, Pos %d"), control->GetCurrentLine() + 1, control->GetColumn(pos) + 1, pos);
         SetStatusText(msg, panel++);
-        SetStatusText(ed->GetControl()->GetOvertype() ? _("Overwrite") : _("Insert"), panel++);
+        SetStatusText(control->GetOvertype() ? _("Overwrite") : _("Insert"), panel++);
 #if wxCHECK_VERSION(3, 0, 0)
         SetStatusText(ed->GetModified() ? _("Modified") : _T(""), panel++);
 #else
         SetStatusText(ed->GetModified() ? _("Modified") : wxEmptyString, panel++);
 #endif
-        SetStatusText(ed->GetControl()->GetReadOnly() ? _("Read only") : _("Read/Write"), panel++);
+        SetStatusText(control->GetReadOnly() ? _("Read only") : _("Read/Write"), panel++);
         SetStatusText(personality, panel++);
     }
     else
@@ -2757,7 +2779,8 @@ void MainFrame::OnApplicationClose(wxCloseEvent& event)
     if (!Manager::IsBatchBuild())
         SaveWindowState();
 
-    m_LayoutManager.DetachPane(m_pPrjManUI->GetNotebook());
+    if (m_pPrjManUI->GetNotebook())
+        m_LayoutManager.DetachPane(m_pPrjManUI->GetNotebook());
     m_LayoutManager.DetachPane(m_pInfoPane);
     m_LayoutManager.DetachPane(Manager::Get()->GetEditorManager()->GetNotebook());
 
@@ -4649,6 +4672,7 @@ void MainFrame::OnSettingsEnvironment(cb_unused wxCommandEvent& event)
         needRestart = m_SmallToolBar != tbarsmall;
         Manager::Get()->GetLogManager()->NotifyUpdate();
         Manager::Get()->GetEditorManager()->RecreateOpenEditorStyles();
+        Manager::Get()->GetCCManager()->UpdateEnvSettings();
         m_pPrjManUI->RebuildTree();
         ShowHideStartPage();
 

@@ -9,7 +9,7 @@
 #include <wx/string.h>
 #include <wx/thread.h>
 
-#include <memory> // auto_ptr
+#include <memory> // unique_ptr
 
 #include <cbexception.h> // cbAssert
 #include <logmanager.h>  // F()
@@ -49,8 +49,8 @@ protected:
     CCLogger& operator=(const CCLogger&) { return *this; }
 
     // static member variables (instance and critical section for Parser)
-    friend class std::auto_ptr<CCLogger>;
-    static std::auto_ptr<CCLogger> s_Inst;
+    friend class std::default_delete<CCLogger>;
+    static std::unique_ptr<CCLogger> s_Inst;
 
 private:
     wxEvtHandler* m_Parent;
@@ -156,8 +156,18 @@ private:
     #define CC_LOCKER_TRACK_CS_ENTER(CS)     CS.Enter();
     #define CC_LOCKER_TRACK_CS_LEAVE(CS)     CS.Leave();
 
-    #define CC_LOCKER_TRACK_TT_MTX_LOCK(M)   cbAssert(M.Lock()==wxMUTEX_NO_ERROR);
-    #define CC_LOCKER_TRACK_TT_MTX_UNLOCK(M) cbAssert(M.Unlock()==wxMUTEX_NO_ERROR);
+    #define CC_LOCKER_TRACK_TT_MTX_LOCK(M)      \
+        do {                                    \
+            auto result = M.Lock();             \
+            cbAssert(result==wxMUTEX_NO_ERROR); \
+        } while (false);
+
+    #define CC_LOCKER_TRACK_TT_MTX_UNLOCK(M)    \
+        do {                                    \
+            auto result = M.Unlock();           \
+            cbAssert(result==wxMUTEX_NO_ERROR); \
+        } while (false);
+
     #define CC_LOCKER_TRACK_CBBT_MTX_LOCK    CC_LOCKER_TRACK_TT_MTX_LOCK
     #define CC_LOCKER_TRACK_CBBT_MTX_UNLOCK  CC_LOCKER_TRACK_TT_MTX_UNLOCK
     #define CC_LOCKER_TRACK_P_MTX_LOCK       CC_LOCKER_TRACK_TT_MTX_LOCK

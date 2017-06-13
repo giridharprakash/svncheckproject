@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="CppCheck" />
+		<Option title="CppCheck/Vera++" />
 		<Option pch_mode="0" />
 		<Option compiler="gcc" />
 		<Build>
@@ -40,6 +40,7 @@
 			<Add option="-DwxUSE_UNICODE" />
 			<Add option="-std=gnu++11" />
 			<Add directory="../../../include" />
+			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
 			<Add directory="$(#WX.INCLUDE)" />
 			<Add directory="$(#WX.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />

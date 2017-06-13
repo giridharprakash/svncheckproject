@@ -2800,8 +2800,8 @@ void cbEditor::AddToContextMenu(wxMenu* popup,ModuleType type,bool pluginsdone)
         }
 
         wxMenu* splitMenu = new wxMenu;
-        splitMenu->Append(idSplitHorz, _("Horizontally"));
-        splitMenu->Append(idSplitVert, _("Vertically"));
+        splitMenu->Append(idSplitHorz, _("Horizontally (top-bottom)"));
+        splitMenu->Append(idSplitVert, _("Vertically (left-right)"));
         splitMenu->AppendSeparator();
         splitMenu->Append(idUnsplit, _("Unsplit"));
         // enable/disable entries accordingly
@@ -2939,40 +2939,49 @@ void cbEditor::OnAfterBuildContextMenu(cb_unused ModuleType type)
 
 void cbEditor::Print(bool selectionOnly, PrintColourMode pcm, bool line_numbers)
 {
+    cbStyledTextCtrl * control = GetControl();
+    if (!control)
+        return;
+
+    // Remember same settings, so we can restore them.
+    int oldMarginWidth = control->GetMarginWidth(C_LINE_MARGIN);
+    int oldMarginType = control->GetMarginType(C_LINE_MARGIN);
+    int oldEdgeMode = control->GetEdgeMode();
+
     // print line numbers?
-    m_pControl->SetMarginType(C_LINE_MARGIN, wxSCI_MARGIN_NUMBER);
+    control->SetMarginType(C_LINE_MARGIN, wxSCI_MARGIN_NUMBER);
     if (!line_numbers)
     {
-        m_pControl->SetPrintMagnification(-1);
-        m_pControl->SetMarginWidth(C_LINE_MARGIN, 0);
+        control->SetPrintMagnification(-1);
+        control->SetMarginWidth(C_LINE_MARGIN, 0);
     }
     else
     {
-        m_pControl->SetPrintMagnification(-2);
-        m_pControl->SetMarginWidth(C_LINE_MARGIN, 1);
+        control->SetPrintMagnification(-2);
+        control->SetMarginWidth(C_LINE_MARGIN, 1);
     }
     // never print the gutter line
-    m_pControl->SetEdgeMode(wxSCI_EDGE_NONE);
+    control->SetEdgeMode(wxSCI_EDGE_NONE);
 
     switch (pcm)
     {
         case pcmAsIs:
-            m_pControl->SetPrintColourMode(wxSCI_PRINT_NORMAL);
+            control->SetPrintColourMode(wxSCI_PRINT_NORMAL);
             break;
         case pcmBlackAndWhite:
-            m_pControl->SetPrintColourMode(wxSCI_PRINT_BLACKONWHITE);
+            control->SetPrintColourMode(wxSCI_PRINT_BLACKONWHITE);
             break;
         case pcmColourOnWhite:
-            m_pControl->SetPrintColourMode(wxSCI_PRINT_COLOURONWHITE);
+            control->SetPrintColourMode(wxSCI_PRINT_COLOURONWHITE);
             break;
         case pcmInvertColours:
-            m_pControl->SetPrintColourMode(wxSCI_PRINT_INVERTLIGHT);
+            control->SetPrintColourMode(wxSCI_PRINT_INVERTLIGHT);
             break;
         default:
             break;
     }
     InitPrinting();
-    wxPrintout* printout = new cbEditorPrintout(m_Filename, m_pControl, selectionOnly);
+    wxPrintout* printout = new cbEditorPrintout(m_Filename, control, selectionOnly);
     if (!g_printer->Print(this, printout, true))
     {
         if (wxPrinter::GetLastError() == wxPRINTER_ERROR)
@@ -2990,13 +2999,15 @@ void cbEditor::Print(bool selectionOnly, PrintColourMode pcm, bool line_numbers)
     }
     delete printout;
 
-    // revert line numbers and gutter settings
-    ConfigManager* mgr = Manager::Get()->GetConfigManager(_T("editor"));
-    if (mgr->ReadBool(_T("/show_line_numbers"), true))
-        m_pControl->SetMarginWidth(C_LINE_MARGIN, 48);
-    else
-        m_pControl->SetMarginWidth(C_LINE_MARGIN, 0);
-    m_pControl->SetEdgeMode(mgr->ReadInt(_T("/gutter/mode"), 0));
+    // revert line number settings
+    control->SetMarginType(C_LINE_MARGIN, oldMarginType);
+    control->SetMarginWidth(C_LINE_MARGIN, oldMarginWidth);
+
+    // revert gutter settings
+    control->SetEdgeMode(oldEdgeMode);
+
+    // restore line numbers if needed
+    m_pData->SetLineNumberColWidth(m_pControl && m_pControl2);
 }
 
 // events
@@ -3313,7 +3324,7 @@ void cbEditor::OnEditorModified(wxScintillaEvent& event)
     bool isDel = event.GetModificationType() & wxSCI_MOD_DELETETEXT;
     if ((isAdd || isDel) && linesAdded != 0)
     {
-        // wheter to show line-numbers or not is handled in SetLineNumberColWidth() now
+        // whether to show line-numbers or not is handled in SetLineNumberColWidth() now
         m_pData->SetLineNumberColWidth();
 
         // NB: I don't think polling for each debugger every time will slow things down enough
@@ -3323,20 +3334,23 @@ void cbEditor::OnEditorModified(wxScintillaEvent& event)
         // although we only reach this part of the code only if a line has been added/removed
         // so, yes, it might not be that bad after all
         int startline = m_pControl->LineFromPosition(event.GetPosition());
-        const DebuggerManager::RegisteredPlugins &plugins = Manager::Get()->GetDebuggerManager()->GetAllDebuggers();
-        cbDebuggerPlugin *active = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-        for (DebuggerManager::RegisteredPlugins::const_iterator it = plugins.begin(); it != plugins.end(); ++it)
+        if (m_pControl == event.GetEventObject())
         {
-            if (it->first != active)
-                it->first->EditorLinesAddedOrRemoved(this, startline + 1, linesAdded);
-        }
-        if (active)
-            active->EditorLinesAddedOrRemoved(this, startline + 1, linesAdded);
+            const DebuggerManager::RegisteredPlugins &plugins = Manager::Get()->GetDebuggerManager()->GetAllDebuggers();
+            cbDebuggerPlugin *active = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
+            for (DebuggerManager::RegisteredPlugins::const_iterator it = plugins.begin(); it != plugins.end(); ++it)
+            {
+                if (it->first != active)
+                    it->first->EditorLinesAddedOrRemoved(this, startline + 1, linesAdded);
+            }
+            if (active)
+                active->EditorLinesAddedOrRemoved(this, startline + 1, linesAdded);
 
-        cbBreakpointsDlg *dlg = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
-        if (dlg)
-            dlg->Reload();
-        RefreshBreakpointMarkers();
+            cbBreakpointsDlg *dlg = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
+            if (dlg)
+                dlg->Reload();
+            RefreshBreakpointMarkers();
+        }
     }
     // If we remove the folding-point (the brace or whatever) from a folded block,
     // we have to make the hidden lines visible, otherwise, they
